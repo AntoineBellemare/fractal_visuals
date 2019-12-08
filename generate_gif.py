@@ -46,7 +46,7 @@ def generate_fractal_noise_2d(shape, res, octaves=1, persistence=0.5):
 
 
 def fractal_generator(persistence):
-    perlin = generate_fractal_noise_2d((256,256), (2,2), octaves=8, persistence=persistence)
+    perlin = generate_fractal_noise_2d((256*4,256*4), (2,2), octaves=8, persistence=persistence)
     img = Image.fromarray(perlin)
     np.median(perlin)
     for i in range(len(perlin)):
@@ -91,12 +91,12 @@ def create_anim(img_arr):
 
 if __name__ == '__main__':
     #np.random.seed(0)
-    noise = generate_perlin_noise_2d((256, 256), (8, 8))
+    noise = generate_perlin_noise_2d((256*4, 256*4), (8, 8))
     #plt.imshow(noise, cmap='gray', interpolation='lanczos')
     #plt.colorbar()
 
     #np.random.seed(0)
-    noise = generate_fractal_noise_2d((256, 256), (16, 16), 4)
+    noise = generate_fractal_noise_2d((256*4, 256*4), (16, 16), 4)
     #plt.figure()
     #plt.imshow(noise, cmap='gray', interpolation='lanczos')
     #plt.colorbar()
@@ -112,16 +112,20 @@ if __name__ == '__main__':
 
 
     img = create_anim(img_arr)
-    print(len(img))
     fig = plt.figure()
     ani = animation.ArtistAnimation(fig, img, interval=50, blit=True,
-                                    repeat_delay=None, repeat=True)
+                                    repeat_delay=None, repeat=False)
 
-    from matplotlib.animation import FFMpegWriter
-    writer = FFMpegWriter(fps=15, metadata=dict(artist='Me'), bitrate=1800)
-    ani.save("movie.mp4", writer=writer)
 
-    plt.show()
+    import matplotlib as mpl
+    mpl.rcParams['animation.convert_path'] = "/home/linuxbrew/.linuxbrew/Cellar/imagemagick/7.0.9-7/bin/magick"
+
+
+    #ani.save("movie.gif", writer='imagemagick', fps=20)
+
+    plt.show();
+
+
 
 
 
