@@ -4,6 +4,7 @@ import matplotlib.animation as animation
 
 import numpy as np
 import matplotlib.pyplot as plt
+plt.rcParams['animation.ffmpeg_path'] = '/usr/bin/ffmpeg'
 import PIL
 from PIL import Image
 import scipy.misc
@@ -110,18 +111,15 @@ if __name__ == '__main__':
     img_arr = InterpolMatrix
 
 
-
-    img = create_anim(img_arr)
     fig = plt.figure()
+    img = create_anim(img_arr)
+
     ani = animation.ArtistAnimation(fig, img, interval=50, blit=True,
                                     repeat_delay=None, repeat=False)
 
 
-    import matplotlib as mpl
-    mpl.rcParams['animation.convert_path'] = "/home/linuxbrew/.linuxbrew/Cellar/imagemagick/7.0.9-7/bin/magick"
 
-
-    #ani.save("movie.gif", writer='imagemagick', fps=20)
+    ani.save("movie.mp4")#, writer='imagemagick', fps=20)
 
     plt.show();
 
