@@ -17,4 +17,4 @@ if __name__ == "__main__":
 
   for x in range(10):
     client.send_message("/svd", random.random())
-    time.sleep(1)
+    time.sleep(1/20)
