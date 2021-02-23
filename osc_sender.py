@@ -6,15 +6,17 @@ from pythonosc import udp_client
 
 
 if __name__ == "__main__":
-  parser = argparse.ArgumentParser()
-  parser.add_argument("--ip", default="127.0.0.1",
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--ip", default="127.0.0.1",
       help="The ip of the OSC server")
-  parser.add_argument("--port", type=int, default=5005,
+    parser.add_argument("--port", type=int, default=5005,
       help="The port the OSC server is listening on")
-  args = parser.parse_args()
+    args = parser.parse_args()
 
-  client = udp_client.SimpleUDPClient(args.ip, args.port)
+    client = udp_client.SimpleUDPClient(args.ip, args.port)
 
-  for x in range(10):
-    client.send_message("/svd", random.random())
-    time.sleep(1/20)
+    while True:
+        number = random.random()
+        client.send_message("/svd", number)
+        print(number)
+        time.sleep(1/20)
