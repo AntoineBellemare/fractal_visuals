@@ -126,8 +126,8 @@ if __name__ == '__main__':
     server.serve_forever()
     '''
 
-    #osc = OSCreceive(addr='localhost', port=5055, message='/svd')
-    #osc.start()
+    osc = OSCreceive(addr='localhost', port=5055, message='/svd')
+    osc.start()
 
     gen = Generator(interp_steps=interp_steps)
     disp = Display(interp_steps=interp_steps, cycle_duration=cycle_duration)
