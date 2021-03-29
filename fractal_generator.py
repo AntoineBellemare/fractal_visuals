@@ -41,9 +41,8 @@ class Generator(Thread):
                 to_compute = False
                 FD_control = np.random.random()
                 end_image = contrast(fractal_generator(FD_control, last_image.shape[0]))
-
                 next_imgs = Interpol(last_image, end_image, self.interp_steps, direction = 0)
-
+                print(len(next_imgs))
                 last_image = end_image
 
 

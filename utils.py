@@ -79,15 +79,19 @@ def Interpol(imageA, imageB, steps, direction = 0):
 
 
 
-def contrast(im):   
-    im *= 255.0/im.max() 
-    image = Image.fromarray(image_arr).convert('L')
+def contrast(im):
+    im *= 255.0/im.max()
+    image = Image.fromarray(im).convert('L')
 
     enhancer = ImageEnhance.Contrast(image)
-    factor = 1000 #increase contrast
+    factor = 100 #increase contrast
     im_output = enhancer.enhance(factor)
     im_output = np.array(im_output)
-    return im_output
+    im_out = np.interp(im_output, (im_output.min(), im_output.max()), (-1, +1))
+    return im_out
+
+
+
 
 def InterpolMulti(size, list_image, steps, direction = 0):
     size = size
