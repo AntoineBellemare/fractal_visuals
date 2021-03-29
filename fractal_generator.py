@@ -17,21 +17,12 @@ import random
 from utils import contrast, Interpol, fractal_generator
 from pythonosc import dispatcher, osc_server
 import sys
+import time
+from pythonosc.osc_server import AsyncIOOSCUDPServer
+from pythonosc.dispatcher import Dispatcher
+import asyncio
 
-def renormalize(n, range1, range2):
-    delta1 = range1[1] - range1[0]
-    delta2 = range2[1] - range2[0]
-    return (delta2 * (n - range1[0]) / delta1) + range2[0]
 
-def complexity2FD(complexity):
-    global FD_control
-    try:
-        FD_control = renormalize(complexity, (-2,2), (0.3,0.9))
-        print('FD_control')
-    except:
-        print('random FD')
-        FD_control = random.randint(3,9)/10
-        return FD_control
 
 
 class Generator(Thread):
@@ -49,7 +40,9 @@ class Generator(Thread):
                     last_image = contrast(fractal_generator(0.1, size=size))
                 to_compute = False
                 end_image = contrast(fractal_generator(FD_control, last_image.shape[0]))
+
                 next_imgs = Interpol(last_image, end_image, self.interp_steps, direction = 0)
+
                 last_image = end_image
 
 
@@ -57,7 +50,7 @@ class Display(Thread):
     # cycle_duration : duration in secs of one pass through next_imgs
     def __init__(self, interp_steps, cycle_duration):
         Thread.__init__(self)
-        self.waitTime = (int((cycle_duration/interp_steps)*1000))
+        self.waitTime = (int((cycle_duration/interp_steps)*1000)) # REPASSER CA A 1000
 
     def run(self):
         global next_imgs, to_compute
@@ -68,8 +61,19 @@ class Display(Thread):
                 for img in current_imgs:
                     cv2.imshow('Fractal generator', img)
                     cv2.waitKey(self.waitTime)
-
         #highgui.DestroyWindow('mahMovie)
+
+def renormalize(n, range1, range2):
+    delta1 = range1[1] - range1[0]
+    delta2 = range2[1] - range2[0]
+    return (delta2 * (n - range1[0]) / delta1) + range2[0]
+
+def complexity2FD(unused_addr, complexity):
+    global FD_control
+    FD_control = renormalize(complexity, (-2,2), (0.3,0.9))
+    print(FD_control)
+    return FD_control
+
 
 class OSCreceive(Thread):
     def __init__(self, addr, port, message):
@@ -78,22 +82,28 @@ class OSCreceive(Thread):
         self.port = port
         self.message = message
 
+
     def run(self):
         global FD_control
-        print('osc')
-        server = osc_server.ThreadingOSCUDPServer((self.addr, self.port), dispatcher)
+        from pythonosc import dispatcher
+        dispatcher = dispatcher.Dispatcher()
+        dispatcher.map('/svd', complexity2FD)
+        server = osc_server.BlockingOSCUDPServer((self.addr, self.port), dispatcher)
         print("Serving on {}".format(server.server_address))
         server.serve_forever()
+
+
+
 
 if __name__ == '__main__':
     global next_imgs, last_image, to_compute, FD_control, size
     size=1024
     cycle_duration = 8
-    interp_steps = 10*cycle_duration
+    interp_steps = 12*cycle_duration
+    FD_control = 0.3
 
     to_compute = True
     next_imgs = []
-    FD_control = 0.9
 
     '''
     dispatcher = dispatcher.Dispatcher()
@@ -103,8 +113,6 @@ if __name__ == '__main__':
     server.serve_forever()
     '''
 
-    dispatcher = dispatcher.Dispatcher()
-    dispatcher.map('/svd', complexity2FD)
     osc = OSCreceive(addr='localhost', port=5055, message='/svd')
     osc.start()
 
