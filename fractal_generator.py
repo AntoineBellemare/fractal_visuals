@@ -39,6 +39,7 @@ class Generator(Thread):
                 if 'last_image' not in locals():
                     last_image = contrast(fractal_generator(0.1, size=size))
                 to_compute = False
+                FD_control = np.random.random()
                 end_image = contrast(fractal_generator(FD_control, last_image.shape[0]))
 
                 next_imgs = Interpol(last_image, end_image, self.interp_steps, direction = 0)
@@ -113,8 +114,8 @@ if __name__ == '__main__':
     server.serve_forever()
     '''
 
-    osc = OSCreceive(addr='localhost', port=5055, message='/svd')
-    osc.start()
+    #osc = OSCreceive(addr='localhost', port=5055, message='/svd')
+    #osc.start()
 
     gen = Generator(interp_steps=interp_steps)
     disp = Display(interp_steps=interp_steps, cycle_duration=cycle_duration)
