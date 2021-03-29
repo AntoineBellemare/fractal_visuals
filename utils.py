@@ -77,8 +77,6 @@ def Interpol(imageA, imageB, steps, direction = 0):
         #final_matrix = np.array(inter_matrix).T
     return inter_matrix
 
-
-
 def contrast(im):
     im *= 255.0/im.max()
     image = Image.fromarray(im).convert('L')
@@ -89,8 +87,6 @@ def contrast(im):
     im_output = np.array(im_output)
     im_out = np.interp(im_output, (im_output.min(), im_output.max()), (-1, +1))
     return im_out
-
-
 
 
 def InterpolMulti(size, list_image, steps, direction = 0):

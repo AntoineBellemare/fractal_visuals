@@ -23,11 +23,11 @@ from pythonosc.dispatcher import Dispatcher
 import asyncio
 
 
-
-
 class Generator(Thread):
-    # Generates a sequence of images that interpolates between a base image and a new created fractal
-    # Options are the base image, end image FD, interpolation_params)
+    '''
+    Generates a sequence of images that interpolates between a base image and a new created fractal
+    This thread updates the next_imgs list when to_compute is set to True by the Display thread
+    '''
     def __init__(self, interp_steps):
         Thread.__init__(self)
         self.interp_steps = interp_steps
@@ -42,12 +42,16 @@ class Generator(Thread):
                 FD_control = np.random.random()
                 end_image = contrast(fractal_generator(FD_control, last_image.shape[0]))
                 next_imgs = Interpol(last_image, end_image, self.interp_steps, direction = 0)
-                print(len(next_imgs))
                 last_image = end_image
 
 
 class Display(Thread):
-    # cycle_duration : duration in secs of one pass through next_imgs
+    '''
+    cycle_duration : duration in secs of one pass through next_imgs
+    This thread displays the images in the next_imgs list, and sets to_compute to True
+    to start the generation of the following batch of images
+    '''
+
     def __init__(self, interp_steps, cycle_duration):
         Thread.__init__(self)
         self.waitTime = (int((cycle_duration/interp_steps)*1000)) # REPASSER CA A 1000
@@ -64,6 +68,15 @@ class Display(Thread):
         #highgui.DestroyWindow('mahMovie)
 
 def renormalize(n, range1, range2):
+    '''
+    Takes a float with range range1 and rescales it into range range2
+    Input :
+    n : float
+    range1 : tuple
+    range2 : tuple
+    Output :
+    float
+    '''
     delta1 = range1[1] - range1[0]
     delta2 = range2[1] - range2[0]
     return (delta2 * (n - range1[0]) / delta1) + range2[0]
