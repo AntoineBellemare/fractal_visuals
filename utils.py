@@ -1,6 +1,6 @@
 import numpy as np
 import PIL
-from PIL import Image
+from PIL import Image, ImageEnhance
 
 def generate_perlin_noise_2d(shape, res):
     def f(t):
@@ -77,14 +77,17 @@ def Interpol(imageA, imageB, steps, direction = 0):
         #final_matrix = np.array(inter_matrix).T
     return inter_matrix
 
-def contrast(image):
-    for i in range(len(image)):
-        for j in range(len(image)):
-            if image[i][j] >= 0:
-                image[i][j] = 1
-            elif image[i][j] < 0:
-                image[i][j] = -1
-    return image
+
+
+def contrast(im):   
+    im *= 255.0/im.max() 
+    image = Image.fromarray(image_arr).convert('L')
+
+    enhancer = ImageEnhance.Contrast(image)
+    factor = 1000 #increase contrast
+    im_output = enhancer.enhance(factor)
+    im_output = np.array(im_output)
+    return im_output
 
 def InterpolMulti(size, list_image, steps, direction = 0):
     size = size
@@ -97,11 +100,15 @@ def InterpolMulti(size, list_image, steps, direction = 0):
     InterpolMulti = np.array(InterpolTemp)
     return InterpolMulti
 
-def Generate_list_images(list_persistence, size):
+def Generate_list_images(list_persistence, size, n_times=1, save=False):
+    i=0
     list_temp = []
-    for x in list_persistence:
-        image = contrast(fractal_generator(x, size))
-        list_temp.append(image)
+    while i < n_times:
+        for x in list_persistence:
+            print(x)
+            image = fractal_generator(x, size)
+            list_temp.append(image)
+        i=i+1
     list_image = np.array(list_temp)
     return list_image
 
@@ -116,3 +123,41 @@ def rgb2gray(rgb):
     r, g, b = rgb[:,:,0], rgb[:,:,1], rgb[:,:,2]
     gray = 0.2989 * r + 0.5870 * g + 0.1140 * b
     return gray
+
+
+def fractal_dimension(Z, threshold=0.9):
+    # Only for 2d image
+    assert(len(Z.shape) == 2)
+
+    # From https://github.com/rougier/numpy-100 (#87)
+    def boxcount(Z, k):
+        S = np.add.reduceat(
+            np.add.reduceat(Z, np.arange(0, Z.shape[0], k), axis=0),
+                               np.arange(0, Z.shape[1], k), axis=1)
+
+        # We count non-empty (0) and non-full boxes (k*k)
+        return len(np.where((S > 0) & (S < k*k))[0])
+
+    # Transform Z into a binary array
+    Z = (Z < threshold)
+
+    # Minimal dimension of image
+    p = min(Z.shape)
+
+    # Greatest power of 2 less than or equal to p
+    n = 2**np.floor(np.log(p)/np.log(2))
+
+    # Extract the exponent
+    n = int(np.log(n)/np.log(2))
+
+    # Build successive box sizes (from 2**n down to 2**1)
+    sizes = 2**np.arange(n, 1, -1)
+
+    # Actual box counting with decreasing size
+    counts = []
+    for size in sizes:
+        counts.append(boxcount(Z, size))
+
+    # Fit the successive log(sizes) with log (counts)
+    coeffs = np.polyfit(np.log(sizes), np.log(counts), 1)
+    return -coeffs[0]
