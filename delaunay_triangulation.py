@@ -10,7 +10,7 @@ import cv2
 from numpy.linalg import inv
 import os
 import random
-from fractal_generator import *
+
 
 
 def rect_contains(rect, point) :
@@ -23,13 +23,12 @@ def rect_contains(rect, point) :
         elif point[1] > rect[3] :
             return False
         return True
-    
+
 def measure_triangle(image, points):
     rect = (0, 0, image.shape[1], image.shape[0])
     sub_div = cv2.Subdiv2D(rect)
 
     for p in points:
-        print(p)
         sub_div.insert(p)
 
     triangle_list = sub_div.getTriangleList()
@@ -107,7 +106,7 @@ def get_morph(del_triangles, src_img, src_points, target_img, target_points, alp
         y = (1 - alpha) * src_points[i][1] + alpha * target_points[i][1]
         weighted_pts.append((x, y))
     img_morph = np.zeros(src_img.shape, dtype=src_img.dtype)
-    
+
     img_stack = []
     for triangle in del_triangles:
         x, y, z = triangle
@@ -128,10 +127,10 @@ def delaunay_morphing (im_in, im_out, src_points=None, target_points=None, steps
     im_in = (im_in - np.min(im_in))/np.ptp(im_in)
     im_out = (im_out - np.min(im_out))/np.ptp(im_out)
     if src_points == None:
-        src_points = [(0, 0), (0, len(im_in)-1), (len(im_in)-1, 0), (len(im_in)-1, len(im_in)-1), 
+        src_points = [(0, 0), (0, len(im_in)-1), (len(im_in)-1, 0), (len(im_in)-1, len(im_in)-1),
                       (len(im_in)/2, len(im_in)/3), (len(im_in)/4, len(im_in)/4)]
     if target_points == None:
-        target_points = [(0, 0), (0, len(im_in)-1), (len(im_in)-1, 0), (len(im_in)-1, len(im_in)-1), 
+        target_points = [(0, 0), (0, len(im_in)-1), (len(im_in)-1, 0), (len(im_in)-1, len(im_in)-1),
                       (len(im_in)/3, len(im_in)/2), (len(im_in)/4, len(im_in)/4)]
     avg_points = []
     for i in range(len(src_points)):
@@ -140,6 +139,6 @@ def delaunay_morphing (im_in, im_out, src_points=None, target_points=None, steps
         avg_points.append((int(x), int(y)))
     triangles = measure_triangle(im_in, avg_points)
     del_morph = []
-    for percent in np.linspace(0, 1, num=steps): 
+    for percent in np.linspace(0, 1, num=steps):
         del_morph.append(get_morph(triangles, im_in, src_points, im_out, target_points, alpha=percent, colorspace = colorspace)[:][0]) ### multiples images are created in get_morph OPTIMIZATION TO BE DONE
     return del_morph
