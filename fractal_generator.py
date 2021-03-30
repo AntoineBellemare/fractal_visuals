@@ -37,11 +37,13 @@ class Generator(Thread):
         while True:
             if to_compute==True:
                 if 'last_image' not in locals():
-                    last_image = contrast(fractal_generator(0.1, size=size))
+                    last_image = fractal_generator(0.1, size=size)
                 to_compute = False
                 FD_control = np.random.random()
-                end_image = contrast(fractal_generator(FD_control, last_image.shape[0]))
-                next_imgs = Interpol(last_image, end_image, self.interp_steps, direction = 0)
+                end_image = fractal_generator(FD_control, last_image.shape[0])
+                next_imgs = delaunay_morphing(last_image, end_image, src_points=None, target_points=None, steps = self.interp_steps, colorspace = 'BW')
+                for idx, img in enumerate(img):
+                    next_imgs[idx] = contrast(img)
                 last_image = end_image
 
 
