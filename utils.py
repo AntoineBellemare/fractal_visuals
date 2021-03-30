@@ -2,6 +2,22 @@ import numpy as np
 import PIL
 from PIL import Image, ImageEnhance
 
+def generate_rgb_img(img1, img2, img3):
+    img1 = (255*(img1 - np.min(img1))/np.ptp(img1)).astype('uint8')
+    img2 = (255*(img2 - np.min(img2))/np.ptp(img2)).astype('uint8')
+    img3 = (255*(img3 - np.min(img3))/np.ptp(img3)).astype('uint8')
+
+    h = img3
+    s = img2
+    #s = img1-img2*8-img1
+    v = img1
+
+    im_RGB = np.stack((h, s, v), axis=2)
+    img = Image.fromarray(im_RGB, mode='HSV')
+    new_p = np.array(img.convert('RGB'))
+    return new_p
+
+
 def generate_perlin_noise_2d(shape, res):
     def f(t):
         return 6*t**5 - 15*t**4 + 10*t**3

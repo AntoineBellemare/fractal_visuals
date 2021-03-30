@@ -14,7 +14,7 @@ import glob
 import cv2
 from threading import Thread, RLock
 import random
-from utils import contrast, Interpol, fractal_generator
+from utils import contrast, Interpol, fractal_generator, generate_rgb_img
 from pythonosc import dispatcher, osc_server
 import sys
 import time
@@ -38,13 +38,25 @@ class Generator(Thread):
         while True:
             if to_compute==True:
                 if 'last_image' not in locals():
-                    last_image = fractal_generator(0.1, size=size)
+                    last_image_temp1 = fractal_generator(0.1, size=size)
+                    last_image_temp2 = fractal_generator(0.1, size=size)
+                    last_image_temp3 = fractal_generator(0.1, size=size)
+                    last_image = generate_rgb_img(last_image_temp1, last_image_temp2, last_image_temp3)
+
                 to_compute = False
                 FD_control = np.random.random()
-                end_image = fractal_generator(FD_control, last_image.shape[0])
-                next_imgs = delaunay_morphing(last_image, end_image, src_points=None, target_points=None, steps = self.interp_steps, colorspace = 'BW')
-                for idx, img in enumerate(next_imgs):
-                    next_imgs[idx] = contrast(img)
+                start = time.time()
+                end_image_temp1 = fractal_generator(FD_control, last_image_temp1.shape[0])
+                end_image_temp2 = fractal_generator(FD_control, last_image_temp1.shape[0])
+                end_image_temp3 = fractal_generator(FD_control, last_image_temp1.shape[0])
+
+
+                end_image = generate_rgb_img(end_image_temp1, end_image_temp2, end_image_temp3)
+                next_imgs = delaunay_morphing(last_image, end_image, src_points=None, target_points=None, steps = self.interp_steps, colorspace = 'RGB')
+#                for idx, img in enumerate(next_imgs):
+#                    next_imgs[idx] = contrast(img)
+                stop = time.time()
+                print(stop-start)
                 last_image = end_image
 
 
@@ -112,10 +124,10 @@ class OSCreceive(Thread):
 
 
 if __name__ == '__main__':
-    global next_imgs, last_image, to_compute, FD_control, size
+    global next_imgs, to_compute, FD_control, size
     size=1024
-    cycle_duration = 8
-    interp_steps = 12*cycle_duration
+    cycle_duration = 16
+    interp_steps = 6*cycle_duration
     FD_control = 0.3
 
     to_compute = True
