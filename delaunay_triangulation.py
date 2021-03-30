@@ -66,7 +66,7 @@ def apply_affine_transform(src, src_tri, target_tri, size):
     return dst
 
 
-def morph_triangle(img1, img2, img, t1, t2, t, alpha):
+def morph_triangle(img1, img2, img, t1, t2, t, alpha, colorspace = 'BW'):
     r1 = cv2.boundingRect(np.float32([t1]))
     r2 = cv2.boundingRect(np.float32([t2]))
     r = cv2.boundingRect(np.float32([t]))
@@ -99,7 +99,7 @@ def morph_triangle(img1, img2, img, t1, t2, t, alpha):
     img[r[1]:r[1]+r[3], r[0]:r[0]+r[2]] = img[r[1]:r[1]+r[3], r[0]:r[0]+r[2]] * (1 - mask) + img_rect * mask
     return img
 
-def get_morph(del_triangles, src_img, src_points, target_img, target_points, alpha = 0.5):
+def get_morph(del_triangles, src_img, src_points, target_img, target_points, alpha = 0.5, colorspace = 'BW'):
 
     weighted_pts = []
     for i in range(len(src_points)):
@@ -117,14 +117,14 @@ def get_morph(del_triangles, src_img, src_points, target_img, target_points, alp
         #print(t2)
         t = [weighted_pts[x], weighted_pts[y], weighted_pts[z]]
         #print(t)
-        img_stack.append(morph_triangle(src_img, target_img, img_morph, t1, t2, t, alpha))
+        img_stack.append(morph_triangle(src_img, target_img, img_morph, t1, t2, t, alpha, colorspace = colorspace))
     return img_stack
 
 
 
 ### Wraped-up function ###
 
-def delaunay_morphing (im_in, im_out, src_points=None, target_points=None, steps = 25):
+def delaunay_morphing (im_in, im_out, src_points=None, target_points=None, steps = 25, colorspace = 'BW'):
     im_in = (im_in - np.min(im_in))/np.ptp(im_in)
     im_out = (im_out - np.min(im_out))/np.ptp(im_out)
     if src_points == None:
@@ -141,5 +141,5 @@ def delaunay_morphing (im_in, im_out, src_points=None, target_points=None, steps
     triangles = measure_triangle(im_in, avg_points)
     del_morph = []
     for percent in np.linspace(0, 1, num=steps): 
-        del_morph.append(get_morph(triangles, im_in, src_points, im_out, target_points, alpha=percent)[:][0]) ### multiples images are created in get_morph OPTIMIZATION TO BE DONE
+        del_morph.append(get_morph(triangles, im_in, src_points, im_out, target_points, alpha=percent, colorspace = colorspace)[:][0]) ### multiples images are created in get_morph OPTIMIZATION TO BE DONE
     return del_morph
