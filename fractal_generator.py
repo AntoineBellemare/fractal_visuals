@@ -21,6 +21,7 @@ import time
 from pythonosc.osc_server import AsyncIOOSCUDPServer
 from pythonosc.dispatcher import Dispatcher
 import asyncio
+from delaunay_triangulation import delaunay_morphing
 
 
 class Generator(Thread):
@@ -42,7 +43,7 @@ class Generator(Thread):
                 FD_control = np.random.random()
                 end_image = fractal_generator(FD_control, last_image.shape[0])
                 next_imgs = delaunay_morphing(last_image, end_image, src_points=None, target_points=None, steps = self.interp_steps, colorspace = 'BW')
-                for idx, img in enumerate(img):
+                for idx, img in enumerate(next_imgs):
                     next_imgs[idx] = contrast(img)
                 last_image = end_image
 
