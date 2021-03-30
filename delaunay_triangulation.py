@@ -79,8 +79,10 @@ def morph_triangle(img1, img2, img, t1, t2, t, alpha):
         t_rect.append(((t[i][0] - r[0]), (t[i][1] - r[1])))
         t1_rect.append(((t1[i][0] - r1[0]), (t1[i][1] - r1[1])))
         t2_rect.append(((t2[i][0] - r2[0]), (t2[i][1] - r2[1])))
-    #mask = np.zeros((r[3], r[2], 3), dtype=np.float32)
-    mask = np.zeros((r[3], r[2]), dtype=np.float32)
+    if colorspace == 'BW':
+        mask = np.zeros((r[3], r[2]), dtype=np.float32)
+    if colorspace == 'RGB':
+        mask = np.zeros((r[3], r[2], 3), dtype=np.float32)
     #print(plt.imshow(mask))
     cv2.fillConvexPoly(mask, np.int32(t_rect), (1.0, 1.0, 1.0), 16, 0)
 
