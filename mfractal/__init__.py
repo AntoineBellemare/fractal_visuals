@@ -1,0 +1,53 @@
+"""
+mfractal: generate and quantify multifractal / multifractional 2D fields
+for pareidolia stimulus research.
+
+Two flagships (spectral, full-brightness):
+    from mfractal import multifractal_cloud, multifractional, punch
+Three process-based organic generators:
+    from mfractal import dla, stir_and_fold, branching_network
+Natural-surface textures for pareidolia (rock / marble / agate / cracked stone):
+    from mfractal import rock_texture, marble, agate, weathered, granite, cellular_stone
+"""
+from . import generators, quantify, stimuli, flagships, organic, textures, fluids, dataset, clouds, cloudscape as _cloudscape_mod
+from .flagships import (multifractal_cloud, multifractional, punch,
+                        complexity, sample_battery)
+from .organic import dla, stir_and_fold, branching_network
+from .textures import (rock_texture, marble, agate, weathered, granite,
+                       cellular_stone, colorize, list_palettes, PALETTES,
+                       colorize_natural, NATURAL_PALETTES,
+                       strata, gneiss, concentric, breccia, porphyry,
+                       dendritic, vesicular, stylolite, mylonite, stromatolite,
+                       boudinage, liesegang, convoluted, turbulent, flow_banded, schist,
+                       serpentinite, veined, complexity_range,
+                       flow_banded, schist, chert, serpentinite, veined,
+                       ROCK_FAMILIES, COMPLEX_FAMILIES)
+from .fluids import (eddies, vorticity, plume, curl_weave, dye_diffusion,
+                     rheoscopic, choppy, FLUID_FAMILIES, CX_FLUIDS)
+from .cloudscape import cloudscape, SKY_PALETTES
+from .clouds import (cascade_lognormal, stratified, billow, cirrus, ridged,
+                     warped_fbm, cloud_mrw, cloud_multifractional, CLOUD_FAMILIES)
+from .dataset import build_dataset, validate_dataset, generate
+from .quantify import wavelet_leaders_2d
+from .quantify import (mfdfa_2d, moments_2d, legendre, spectrum_summary,
+                       box_count_support, local_fd_map, heterogeneity)
+
+__all__ = [
+    "generators", "quantify", "stimuli", "flagships", "organic", "textures", "fluids",
+    "eddies", "vorticity", "plume", "curl_weave", "dye_diffusion", "rheoscopic", "choppy", "FLUID_FAMILIES", "CX_FLUIDS",
+    "dataset", "build_dataset", "validate_dataset", "generate", "wavelet_leaders_2d",
+    "clouds", "cloudscape", "SKY_PALETTES", "CLOUD_FAMILIES", "cascade_lognormal", "stratified", "billow", "cirrus",
+    "ridged", "warped_fbm", "cloud_mrw", "cloud_multifractional",
+    "multifractal_cloud", "multifractional", "punch", "complexity", "sample_battery",
+    "dla", "stir_and_fold", "branching_network",
+    "rock_texture", "marble", "agate", "weathered", "granite", "cellular_stone",
+    "colorize", "list_palettes", "PALETTES", "colorize_natural", "NATURAL_PALETTES",
+    "strata", "gneiss", "concentric", "breccia", "porphyry", "dendritic", "vesicular",
+    "stylolite", "mylonite", "stromatolite", "boudinage", "liesegang",
+    "convoluted", "turbulent", "flow_banded", "schist", "serpentinite", "veined",
+    "complexity_range",
+    "flow_banded", "schist", "chert", "serpentinite", "veined",
+    "ROCK_FAMILIES", "COMPLEX_FAMILIES",
+    "mfdfa_2d", "moments_2d", "legendre", "spectrum_summary",
+    "box_count_support", "local_fd_map", "heterogeneity",
+]

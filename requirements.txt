@@ -1,0 +1,4 @@
+numpy
+scipy
+matplotlib
+pywavelets  # optional: wavelet-leader (c1,c2) validation
