@@ -207,6 +207,7 @@ def colorize(gray, palette="sandstone", saturation=0.65):
 # polychromatic natural coloring: hue from independent fractal pigment fields
 # ---------------------------------------------------------------------------
 NATURAL_PALETTES = {
+    # --- earthy / rock (original set) ---
     "desert_varnish": [(0.30, 0.22, 0.16), (0.55, 0.34, 0.20), (0.68, 0.55, 0.35),
                        (0.42, 0.45, 0.38), (0.85, 0.78, 0.62)],
     "lichen":         [(0.40, 0.43, 0.36), (0.58, 0.60, 0.46), (0.52, 0.40, 0.28),
@@ -223,7 +224,98 @@ NATURAL_PALETTES = {
                        (0.72, 0.70, 0.70), (0.90, 0.89, 0.88)],
     "oil_film":       [(0.18, 0.10, 0.34), (0.10, 0.38, 0.52), (0.20, 0.56, 0.40),
                        (0.74, 0.60, 0.22), (0.62, 0.26, 0.40)],
+
+    # --- cloud / atmosphere ---
+    "dawn_sky":       [(0.18, 0.18, 0.28), (0.42, 0.32, 0.42), (0.78, 0.55, 0.52),
+                       (0.85, 0.72, 0.62), (0.96, 0.92, 0.88)],
+    "storm_cell":     [(0.10, 0.11, 0.14), (0.26, 0.27, 0.32), (0.34, 0.32, 0.40),
+                       (0.55, 0.55, 0.58), (0.82, 0.82, 0.84)],
+    "golden_hour":    [(0.20, 0.15, 0.15), (0.55, 0.32, 0.25), (0.82, 0.55, 0.32),
+                       (0.92, 0.78, 0.55), (0.98, 0.94, 0.86)],
+
+    # --- fluid / water ---
+    "ocean_deep":     [(0.04, 0.10, 0.18), (0.10, 0.22, 0.34), (0.18, 0.42, 0.50),
+                       (0.42, 0.66, 0.66), (0.82, 0.92, 0.92)],
+    "tidepool":       [(0.08, 0.16, 0.18), (0.18, 0.36, 0.32), (0.46, 0.46, 0.30),
+                       (0.62, 0.46, 0.32), (0.86, 0.84, 0.74)],
+    "marsh":          [(0.10, 0.15, 0.10), (0.26, 0.34, 0.22), (0.42, 0.46, 0.30),
+                       (0.60, 0.54, 0.36), (0.82, 0.78, 0.62)],
+
+    # --- bark / wood ---
+    "aged_oak":       [(0.12, 0.08, 0.04), (0.32, 0.20, 0.10), (0.58, 0.40, 0.22),
+                       (0.78, 0.62, 0.40), (0.92, 0.85, 0.70)],
+    "driftwood":      [(0.18, 0.16, 0.14), (0.42, 0.38, 0.32), (0.58, 0.52, 0.44),
+                       (0.74, 0.70, 0.62), (0.92, 0.90, 0.84)],
+    "cedar":          [(0.14, 0.07, 0.05), (0.42, 0.18, 0.10), (0.66, 0.36, 0.20),
+                       (0.82, 0.58, 0.36), (0.95, 0.86, 0.70)],
+
+    # --- smoke / haze ---
+    "ash_drift":      [(0.12, 0.12, 0.14), (0.26, 0.26, 0.30), (0.45, 0.42, 0.46),
+                       (0.66, 0.62, 0.62), (0.88, 0.86, 0.85)],
+    "wildfire_haze":  [(0.16, 0.12, 0.10), (0.38, 0.28, 0.22), (0.62, 0.46, 0.32),
+                       (0.76, 0.62, 0.46), (0.92, 0.84, 0.72)],
+
+    # --- fire / lava ---
+    "ember_glow":     [(0.06, 0.02, 0.02), (0.32, 0.06, 0.04), (0.68, 0.22, 0.06),
+                       (0.92, 0.55, 0.18), (0.98, 0.86, 0.55)],
+    "volcanic":       [(0.04, 0.04, 0.05), (0.20, 0.12, 0.10), (0.54, 0.18, 0.10),
+                       (0.86, 0.46, 0.16), (0.96, 0.85, 0.55)],
+    "hearth":         [(0.10, 0.06, 0.04), (0.36, 0.18, 0.08), (0.62, 0.32, 0.12),
+                       (0.84, 0.56, 0.22), (0.94, 0.82, 0.55)],
 }
+
+
+# Recommended palette per family (used by colorize_for_family).
+FAMILY_PALETTES = {
+    # rock
+    "marble":               "desert_varnish",
+    "agate":                "mineral_oxide",
+    "weathered":            "weathered_copper",
+    "granite":              "lichen",
+    "vesicular":            "forest_floor",
+    "turbulent":            "weathered_copper",
+    "schist":               "ink",
+    "serpentinite":         "lichen",
+    "flow_banded":          "mineral_oxide",
+    "convoluted":           "desert_varnish",
+    "gneiss":               "smoke",
+    "cellular_stone":       "forest_floor",
+    # cloud
+    "cascade_lognormal":    "storm_cell",
+    "stratified":           "dawn_sky",
+    "billow":               "golden_hour",
+    "cirrus":               "dawn_sky",
+    "cloud_mrw":            "storm_cell",
+    "cloud_multifractional":"dawn_sky",
+    "warped_fbm":           "storm_cell",
+    "ridged":               "golden_hour",
+    # fluid
+    "curl_weave":           "oil_film",
+    "choppy":               "ocean_deep",
+    "eddies":               "tidepool",
+    "vorticity":            "ink",
+    "dye_diffusion":        "oil_film",
+    "rheoscopic":           "marsh",
+    # bark
+    "burled_oak":           "aged_oak",
+    "riven_oak":            "driftwood",
+    # smoke
+    "chimney_plume":        "ash_drift",
+    "billow_smoke":         "wildfire_haze",
+    # fire
+    "firestorm":            "ember_glow",
+    "lava_pool":            "volcanic",
+    "volcanic_fissure":     "hearth",
+}
+
+
+def colorize_for_family(gray, family, **kw):
+    """Colorize `gray` with the recommended palette for `family` via
+    colorize_natural. Convenience wrapper: keeps the call site short when
+    rendering many families. Pass any colorize_natural kwarg to override
+    defaults (warp, sharpness, saturation, seed)."""
+    palette = FAMILY_PALETTES.get(family, "desert_varnish")
+    return colorize_natural(gray, palette=palette, **kw)
 
 
 def _lum(rgb):
