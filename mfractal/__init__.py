@@ -9,7 +9,7 @@ Three process-based organic generators:
 Natural-surface textures for pareidolia (rock / marble / agate / cracked stone):
     from mfractal import rock_texture, marble, agate, weathered, granite, cellular_stone
 """
-from . import generators, quantify, descriptors, stimuli, flagships, organic, textures, fluids, dataset, clouds, bark, fire, modulations, levy, reaction_diffusion, cloudscape as _cloudscape_mod
+from . import generators, quantify, descriptors, stimuli, flagships, organic, textures, fluids, dataset, clouds, bark, fire, modulations, levy, reaction_diffusion, wavelet_cascade, cloudscape as _cloudscape_mod
 from .flagships import (multifractal_cloud, multifractional, punch,
                         complexity, sample_battery)
 from .organic import dla, stir_and_fold, branching_network
@@ -35,6 +35,7 @@ from .modulations import symmetrize
 from .levy import universal_cascade, levy_marble, LEVY_FAMILIES
 from .reaction_diffusion import (rd_coral, rd_labyrinth, rd_solitons,
                                   REACTION_DIFFUSION_FAMILIES)
+from .wavelet_cascade import prescribed_cascade, WAVELET_FAMILIES
 from .dataset import build_dataset, validate_dataset, generate
 from .quantify import wavelet_leaders_2d
 from .quantify import (mfdfa_2d, moments_2d, legendre, spectrum_summary,
@@ -51,6 +52,7 @@ __all__ = [
     "levy", "universal_cascade", "levy_marble", "LEVY_FAMILIES",
     "reaction_diffusion", "rd_coral", "rd_labyrinth", "rd_solitons",
     "REACTION_DIFFUSION_FAMILIES",
+    "wavelet_cascade", "prescribed_cascade", "WAVELET_FAMILIES",
     "eddies", "vorticity", "plume", "curl_weave", "dye_diffusion", "rheoscopic", "choppy", "FLUID_FAMILIES", "CX_FLUIDS",
     "dataset", "build_dataset", "validate_dataset", "generate", "wavelet_leaders_2d",
     "clouds", "cloudscape", "SKY_PALETTES", "CLOUD_FAMILIES", "cascade_lognormal", "stratified", "billow", "cirrus",
