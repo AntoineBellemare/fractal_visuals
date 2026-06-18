@@ -9,7 +9,7 @@ Three process-based organic generators:
 Natural-surface textures for pareidolia (rock / marble / agate / cracked stone):
     from mfractal import rock_texture, marble, agate, weathered, granite, cellular_stone
 """
-from . import generators, quantify, stimuli, flagships, organic, textures, fluids, dataset, clouds, bark, smoke, fire, cloudscape as _cloudscape_mod
+from . import generators, quantify, descriptors, stimuli, flagships, organic, textures, fluids, dataset, clouds, bark, smoke, fire, cloudscape as _cloudscape_mod
 from .flagships import (multifractal_cloud, multifractional, punch,
                         complexity, sample_battery)
 from .organic import dla, stir_and_fold, branching_network
@@ -34,6 +34,9 @@ from .dataset import build_dataset, validate_dataset, generate
 from .quantify import wavelet_leaders_2d
 from .quantify import (mfdfa_2d, moments_2d, legendre, spectrum_summary,
                        box_count_support, local_fd_map, heterogeneity)
+from .descriptors import (directional_hurst, anisotropy_index, subband_anisotropy,
+                          autocorr_radial, coherence_length, integral_length,
+                          local_c2_map, heterogeneity_full, feature_vector)
 
 __all__ = [
     "generators", "quantify", "stimuli", "flagships", "organic", "textures", "fluids",
@@ -56,4 +59,8 @@ __all__ = [
     "ROCK_FAMILIES", "COMPLEX_FAMILIES",
     "mfdfa_2d", "moments_2d", "legendre", "spectrum_summary",
     "box_count_support", "local_fd_map", "heterogeneity",
+    "descriptors",
+    "directional_hurst", "anisotropy_index", "subband_anisotropy",
+    "autocorr_radial", "coherence_length", "integral_length",
+    "local_c2_map", "heterogeneity_full", "feature_vector",
 ]
