@@ -16,7 +16,7 @@ import math
 import numpy as np
 
 from . import (textures, fluids, clouds, bark, fire, levy, wavelet_cascade,
-                aggregation, attractors, interference)
+                attractors, interference)
 from .textures import ROCK_FAMILIES
 from .fluids import FLUID_FAMILIES
 from .clouds import CLOUD_FAMILIES
@@ -25,7 +25,6 @@ from .bark import BARK_FAMILIES
 from .fire import FIRE_FAMILIES
 from .levy import LEVY_FAMILIES
 from .wavelet_cascade import WAVELET_FAMILIES
-from .aggregation import AGGREGATION_FAMILIES
 from .attractors import ATTRACTOR_FAMILIES
 from .interference import INTERFERENCE_FAMILIES
 from .flagships import punch
@@ -51,8 +50,6 @@ def generate(family, n=256, complexity=None, seed=None):
         return getattr(levy, family)(n, seed=seed, complexity=(0.5 if complexity is None else complexity))
     if family in WAVELET_FAMILIES:
         return getattr(wavelet_cascade, family)(n, seed=seed, complexity=(0.5 if complexity is None else complexity))
-    if family in AGGREGATION_FAMILIES:
-        return getattr(aggregation, family)(n, seed=seed, complexity=(0.5 if complexity is None else complexity))
     if family in ATTRACTOR_FAMILIES:
         return getattr(attractors, family)(n, seed=seed, complexity=(0.5 if complexity is None else complexity))
     if family in INTERFERENCE_FAMILIES:

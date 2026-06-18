@@ -27,8 +27,7 @@ import mfractal as mf
 N = 320
 CXS = [0.0, 0.25, 0.5, 0.75, 1.0]
 SEEDS = [0, 1, 2, 3, 4]
-FAMS = ["dla_dendrite", "clifford_attractor", "de_jong_attractor",
-        "wave_interference"]
+FAMS = ["de_jong_attractor", "wave_interference"]
 
 
 def cx_sweep():

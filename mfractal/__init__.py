@@ -9,7 +9,7 @@ Three process-based organic generators:
 Natural-surface textures for pareidolia (rock / marble / agate / cracked stone):
     from mfractal import rock_texture, marble, agate, weathered, granite, cellular_stone
 """
-from . import generators, quantify, descriptors, stimuli, flagships, organic, textures, fluids, dataset, clouds, bark, fire, modulations, levy, wavelet_cascade, aggregation, attractors, interference, cloudscape as _cloudscape_mod
+from . import generators, quantify, descriptors, stimuli, flagships, organic, textures, fluids, dataset, clouds, bark, fire, modulations, levy, wavelet_cascade, attractors, interference, cloudscape as _cloudscape_mod
 from .flagships import (multifractal_cloud, multifractional, punch,
                         complexity, sample_battery)
 from .organic import dla, stir_and_fold, branching_network
@@ -34,9 +34,7 @@ from .fire import firestorm, lava_pool, volcanic_fissure, FIRE_FAMILIES
 from .modulations import symmetrize
 from .levy import universal_cascade, levy_marble, LEVY_FAMILIES
 from .wavelet_cascade import prescribed_cascade, WAVELET_FAMILIES
-from .aggregation import dla_dendrite, AGGREGATION_FAMILIES
-from .attractors import (clifford_attractor, de_jong_attractor,
-                          ATTRACTOR_FAMILIES)
+from .attractors import de_jong_attractor, ATTRACTOR_FAMILIES
 from .interference import wave_interference, INTERFERENCE_FAMILIES
 from .dataset import build_dataset, validate_dataset, generate
 from .quantify import wavelet_leaders_2d
@@ -53,8 +51,7 @@ __all__ = [
     "modulations", "symmetrize",
     "levy", "universal_cascade", "levy_marble", "LEVY_FAMILIES",
     "wavelet_cascade", "prescribed_cascade", "WAVELET_FAMILIES",
-    "aggregation", "dla_dendrite", "AGGREGATION_FAMILIES",
-    "attractors", "clifford_attractor", "de_jong_attractor", "ATTRACTOR_FAMILIES",
+    "attractors", "de_jong_attractor", "ATTRACTOR_FAMILIES",
     "interference", "wave_interference", "INTERFERENCE_FAMILIES",
     "eddies", "vorticity", "plume", "curl_weave", "dye_diffusion", "rheoscopic", "choppy", "FLUID_FAMILIES", "CX_FLUIDS",
     "dataset", "build_dataset", "validate_dataset", "generate", "wavelet_leaders_2d",
