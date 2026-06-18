@@ -79,33 +79,66 @@ def _orbit_to_image(xs, ys, n, smooth=0.7):
     return _normalize01(H)
 
 
+def _orbit_quality(xs, ys, min_bbox=0.6, min_occupancy=0.04, probe_bins=96):
+    """Returns True if the orbit is a non-trivial strange attractor:
+    - finite values
+    - bounding box at least min_bbox in each axis
+    - histogram occupancy (fraction of probe bins visited) at least
+      min_occupancy. This catches short cycles that pass the bbox check
+      but only visit a handful of cells.
+    """
+    if not (np.isfinite(xs).all() and np.isfinite(ys).all()):
+        return False
+    bx = float(xs.max() - xs.min())
+    by = float(ys.max() - ys.min())
+    if bx < min_bbox or by < min_bbox:
+        return False
+    H, _, _ = np.histogram2d(ys, xs, bins=probe_bins)
+    occupancy = float((H > 0).mean())
+    return occupancy >= min_occupancy
+
+
+def _sample_attractor(iterate_fn, n_iter, rng, low=-2.5, high=2.5, tries=40):
+    """Sample (a,b,c,d) from a wide range; retry if the orbit isn't a
+    non-trivial strange attractor. Returns (xs, ys, params).
+
+    Each retry uses a *short* probe iteration to cheaply discard degenerate
+    parameter sets; only the accepted set is iterated for the full n_iter.
+    """
+    probe_iters = 8000
+    for _ in range(tries):
+        params = rng.uniform(low, high, size=4)
+        xs, ys = iterate_fn(*params, n_iter=probe_iters)
+        xs = xs[400:]; ys = ys[400:]
+        if _orbit_quality(xs, ys):
+            # accepted — run the full iteration
+            xs, ys = iterate_fn(*params, n_iter=n_iter)
+            return xs[400:], ys[400:], params
+    # fallback: full iteration on the last attempt so we never return nothing
+    xs, ys = iterate_fn(*params, n_iter=n_iter)
+    return xs[400:], ys[400:], params
+
+
 def clifford_attractor(n=384, seed=None, complexity=0.5):
-    """Clifford attractor density. cx routes iteration count + parameter
-    perturbation; seed picks the parameter neighborhood."""
+    """Clifford attractor density. seed picks (a,b,c,d) from the full
+    [-2.5, 2.5]^4 parameter cube (with rejection of degenerate orbits) so
+    different seeds give visually distinct attractors. cx routes iteration
+    count only."""
     cx = float(np.clip(complexity, 0.0, 1.0))
     rng = default_rng(seed)
     n_iter = int(150_000 + 850_000 * cx)
-    # base params known to give rich orbits; perturb mildly with seed and cx
-    base = np.array([-1.4, 1.6, 1.0, 0.7])
-    jitter = 0.35 * (rng.random(4) - 0.5)
-    perturb = 0.15 * cx * rng.standard_normal(4)
-    a, b, c, d = base + jitter + perturb
-    xs, ys = _iterate_clifford(a, b, c, d, n_iter)
-    # discard transient
-    xs = xs[200:]; ys = ys[200:]
+    xs, ys, _ = _sample_attractor(_iterate_clifford, n_iter, rng,
+                                   low=-2.2, high=2.2)
     return _orbit_to_image(xs, ys, n, smooth=max(0.4, 1.2 - 0.8 * cx))
 
 
 def de_jong_attractor(n=384, seed=None, complexity=0.5):
-    """de Jong attractor density. cx routes iteration count + parameter
-    perturbation; seed picks the parameter neighborhood."""
+    """de Jong attractor density. seed picks (a,b,c,d) from a wide
+    parameter range so different seeds give visually distinct attractors.
+    cx routes iteration count only."""
     cx = float(np.clip(complexity, 0.0, 1.0))
     rng = default_rng(seed)
     n_iter = int(150_000 + 850_000 * cx)
-    base = np.array([1.4, -2.3, 2.4, -2.1])
-    jitter = 0.30 * (rng.random(4) - 0.5)
-    perturb = 0.15 * cx * rng.standard_normal(4)
-    a, b, c, d = base + jitter + perturb
-    xs, ys = _iterate_de_jong(a, b, c, d, n_iter)
-    xs = xs[200:]; ys = ys[200:]
+    xs, ys, _ = _sample_attractor(_iterate_de_jong, n_iter, rng,
+                                   low=-2.7, high=2.7)
     return _orbit_to_image(xs, ys, n, smooth=max(0.4, 1.2 - 0.8 * cx))
