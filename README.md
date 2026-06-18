@@ -57,17 +57,18 @@ The full generator + estimator reference lives in
 
 ## Domains & curated families
 
-The toolbox ships 31 families across five domains. After empirical validation
+The toolbox ships 36 families across five domains. After empirical validation
 on the original 30 (see [`benchmarks/`](benchmarks/)) the **25 curated** families
-below are the recommended ones from that set; the six post-validation
-**organic** families (bark / billow_smoke / fire) ship in their own modules and
-have been visually validated but not yet swept on the c2 knob.
+below are the recommended ones from that set; the post-validation organic and
+new-base families (bark / billow_smoke / fire / Lévy / wavelet / attractor /
+interference) ship in their own modules and have been visually validated but
+not all swept on the c2 knob.
 
 | Domain | Curated families | Notes |
 |---|---|---|
-| **Rock** (11) | marble, agate, weathered, granite, vesicular, turbulent, schist, serpentinite, flow_banded, convoluted, **gneiss** | gneiss = monofractal anchor (rho ~ 0) |
-| **Cloud** (9) | cascade_lognormal, stratified, billow, cirrus, cloud_mrw, cloud_multifractional, **warped_fbm**, ridged, billow_smoke | warped_fbm = monofractal anchor; ridged is a structural-detail axis (bin by measured c2); billow_smoke = broad billowing smoke cloud, fBM-beta routed |
-| **Fluid** (6) | curl_weave, choppy, eddies, vorticity, dye_diffusion, rheoscopic | eddies/vorticity = real 2D Navier-Stokes sims; dye_diffusion is sparse at low cx (bin by measured c2); rheoscopic is a near-monofractal flow-viz texture |
+| **Rock** (12) | marble, agate, weathered, granite, vesicular, turbulent, schist, serpentinite, flow_banded, convoluted, **gneiss**, levy_marble | gneiss = monofractal anchor (rho ~ 0); levy_marble = Lévy cascade + double warp |
+| **Cloud** (12) | cascade_lognormal, stratified, billow, cirrus, cloud_mrw, cloud_multifractional, **warped_fbm**, ridged, billow_smoke, universal_cascade, prescribed_cascade, de_jong_attractor | warped_fbm = monofractal anchor; ridged is a structural-detail axis; billow_smoke = broad billowing smoke; universal_cascade = α-stable Lévy cascade; prescribed_cascade = (c1, c2) targeting (validated, c1 RMSE 0.12 / c2 RMSE 0.08); de_jong_attractor = chaotic-map orbit density (cosmic-dust / wispy reads) |
+| **Fluid** (7) | curl_weave, choppy, eddies, vorticity, dye_diffusion, rheoscopic, wave_interference | eddies/vorticity = real 2D Navier-Stokes sims; dye_diffusion is sparse at low cx; rheoscopic is a near-monofractal flow-viz texture; wave_interference = sum of random plane waves with optional `crispness` knob |
 | **Bark** (2) | burled_oak, riven_oak | intricate-knot wood surfaces; complexity grows knot density / cracks-per-anchor |
 | **Fire** (3) | firestorm, lava_pool, volcanic_fissure | drastic spatial silhouettes: chaotic vortices / Voronoi pools / vertical cracks |
 

@@ -301,6 +301,12 @@ FAMILY_PALETTES = {
     "riven_oak":            "driftwood",
     # billow_smoke (lives in clouds module): keep its smoky haze palette
     "billow_smoke":         "wildfire_haze",
+    # post-2026-06 additions (lévy / wavelet / attractor / interference)
+    "levy_marble":          "mineral_oxide",
+    "universal_cascade":    "storm_cell",
+    "prescribed_cascade":   "dawn_sky",
+    "de_jong_attractor":    "wildfire_haze",
+    "wave_interference":    "ocean_deep",
     # fire
     "firestorm":            "ember_glow",
     "lava_pool":            "volcanic",
