@@ -49,5 +49,7 @@ Thumbs.db
 benchmarks/_scratch/
 datasets/_scratch/
 
-# Diffusion generation outputs (large; reproducible from scripts)
-benchmarks/diffusion/out/
+# Diffusion generated PNGs (large; reproducible from scripts).
+# We still track manifest.csv / analysis.csv / report/ — those are the artifacts.
+benchmarks/diffusion/out/*/
+!benchmarks/diffusion/out/report/
