@@ -15,13 +15,14 @@ import csv
 import math
 import numpy as np
 
-from . import textures, fluids, clouds, bark, fire
+from . import textures, fluids, clouds, bark, fire, levy
 from .textures import ROCK_FAMILIES
 from .fluids import FLUID_FAMILIES
 from .clouds import CLOUD_FAMILIES
 from .fluids import CX_FLUIDS
 from .bark import BARK_FAMILIES
 from .fire import FIRE_FAMILIES
+from .levy import LEVY_FAMILIES
 from .flagships import punch
 from .quantify import wavelet_leaders_2d, mfdfa_2d, spectrum_summary
 
@@ -41,6 +42,8 @@ def generate(family, n=256, complexity=None, seed=None):
         return getattr(bark, family)(n, seed=seed, complexity=(0.5 if complexity is None else complexity))
     if family in FIRE_FAMILIES:
         return getattr(fire, family)(n, seed=seed, complexity=(0.5 if complexity is None else complexity))
+    if family in LEVY_FAMILIES:
+        return getattr(levy, family)(n, seed=seed, complexity=(0.5 if complexity is None else complexity))
     fn = getattr(textures, family)
     if complexity is None:
         return fn(n, seed=seed)
