@@ -48,3 +48,6 @@ Thumbs.db
 # Tracked outputs live in benchmarks/figures/ + benchmarks/results/ + datasets/pareidolia/.
 benchmarks/_scratch/
 datasets/_scratch/
+
+# Diffusion generation outputs (large; reproducible from scripts)
+benchmarks/diffusion/out/

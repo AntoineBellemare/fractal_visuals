@@ -57,17 +57,20 @@ The full generator + estimator reference lives in
 
 ## Domains & curated families
 
-The toolbox ships 30 families across three domains. After empirical validation
-(see [`benchmarks/`](benchmarks/)) the **25 curated families** below are the
-recommended ones for experimental use - they have either a clean monotonic
-multifractality knob, or serve as deliberate monofractal controls, or carry a
-documented stimulus value despite imperfect knob behaviour.
+The toolbox ships 30 + 7 families across six domains. After empirical validation
+on the original 30 (see [`benchmarks/`](benchmarks/)) the **25 curated** families
+below are the recommended ones from that set; the seven post-validation
+**organic** families (bark / smoke / fire) ship in their own modules and have
+been visually validated but not yet swept on the c2 knob.
 
 | Domain | Curated families | Notes |
 |---|---|---|
 | **Rock** (11) | marble, agate, weathered, granite, vesicular, turbulent, schist, serpentinite, flow_banded, convoluted, **gneiss** | gneiss = monofractal anchor (rho ~ 0) |
 | **Cloud** (8) | cascade_lognormal, stratified, billow, cirrus, cloud_mrw, cloud_multifractional, **warped_fbm**, ridged | warped_fbm = monofractal anchor; ridged is a structural-detail axis (bin by measured c2 because of a smooth-low-cx wavelet artifact) |
 | **Fluid** (6) | curl_weave, choppy, eddies, vorticity, dye_diffusion, rheoscopic | eddies/vorticity = real 2D Navier-Stokes sims; dye_diffusion is sparse at low cx (bin by measured c2); rheoscopic is a near-monofractal flow-viz texture |
+| **Bark** (2) | burled_oak, riven_oak | intricate-knot wood surfaces; complexity grows knot density / cracks-per-anchor |
+| **Smoke** (2) | chimney_plume, billow_smoke | soft rising plumes; complexity maps to fBM beta (smooth haze -> turbulent wisps) |
+| **Fire** (3) | firestorm, lava_pool, volcanic_fissure | drastic spatial silhouettes: chaotic vortices / Voronoi pools / vertical cracks |
 
 **Dropped** from the original 30 after validation:
 `plume` (estimator artifact, c2 ~ -8); `cellular_stone`, `concentric`,
@@ -164,6 +167,32 @@ python datasets/build_pareidolia.py
 
 All four scripts re-run cleanly from a fresh clone - outputs end up under
 `benchmarks/results/`, `benchmarks/figures/`, and `datasets/pareidolia/`.
+
+---
+
+## Roadmap: diffusion-generated natural textures + MF-ControlNet
+
+The procedural side gives us pixel-perfect control over generative parameters
+(seed, complexity, family) but the textures live in their own visual register
+- they read as procedural, not as photographs. The next phase brings in
+photorealistic counterparts:
+
+1. **Diffusion sweep.** Generate 5 prompt variations x ~10 images per family
+   using a photorealism-tuned SDXL or FLUX pipeline. Measure c1 / c2 on each
+   output via the same `wavelet_leaders_2d` estimator. Code lives in
+   [`benchmarks/diffusion/`](benchmarks/diffusion/) and runs on a single
+   16 GB GPU.
+2. **Multifractal dataset of natural images.** The labeled per-image c2 from
+   step 1 yields a c2-balanced natural-image dataset analogous to the
+   procedural one in `datasets/pareidolia/`.
+3. **MF-ControlNet.** Train a ControlNet whose conditioning signal is a local
+   multifractal descriptor (e.g. local FD map / heterogeneity from
+   `mfractal.quantify.local_fd_map`) so the diffusion model becomes
+   controllable on multifractality directly. The end product is a generator
+   that produces photorealistic natural textures at a chosen target c2.
+
+The diffusion sweep is the first checkpoint and is what
+[`benchmarks/diffusion/`](benchmarks/diffusion/) currently implements.
 
 ---
 
