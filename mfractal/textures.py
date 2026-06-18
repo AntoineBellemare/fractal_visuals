@@ -299,8 +299,7 @@ FAMILY_PALETTES = {
     # bark
     "burled_oak":           "aged_oak",
     "riven_oak":            "driftwood",
-    # smoke
-    "chimney_plume":        "ash_drift",
+    # billow_smoke (lives in clouds module): keep its smoky haze palette
     "billow_smoke":         "wildfire_haze",
     # fire
     "firestorm":            "ember_glow",

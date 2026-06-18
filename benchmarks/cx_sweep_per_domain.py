@@ -1,17 +1,16 @@
 """
 Complexity sweep for every family, one figure per domain.
 
-For each domain (rock, cloud, fluid, bark, smoke, fire):
+For each domain (rock, cloud, fluid, bark, fire):
   rows    = families in that domain
   columns = complexity values 0.0, 0.25, 0.5, 0.75, 1.0
-  cell    = colorized image via colorize_for_family
+  cell    = grayscale image (mf.punch)
 
 Outputs:
   benchmarks/figures/14_cx_sweep_rock.png
   benchmarks/figures/15_cx_sweep_cloud.png
   benchmarks/figures/16_cx_sweep_fluid.png
   benchmarks/figures/17_cx_sweep_bark.png
-  benchmarks/figures/18_cx_sweep_smoke.png
   benchmarks/figures/19_cx_sweep_fire.png
 """
 from __future__ import annotations
@@ -30,20 +29,18 @@ DOMAIN = {
     "rock":  ["marble","agate","weathered","granite","vesicular","turbulent",
               "schist","serpentinite","flow_banded","convoluted","gneiss"],
     "cloud": ["cascade_lognormal","stratified","billow","cirrus","cloud_mrw",
-              "cloud_multifractional","warped_fbm","ridged"],
+              "cloud_multifractional","warped_fbm","ridged","billow_smoke"],
     "fluid": ["curl_weave","choppy","eddies","vorticity","dye_diffusion","rheoscopic"],
     "bark":  ["burled_oak","riven_oak"],
-    "smoke": ["chimney_plume","billow_smoke"],
     "fire":  ["firestorm","lava_pool","volcanic_fissure"],
 }
 CXS = [0.0, 0.25, 0.5, 0.75, 1.0]
 N = 384
 SEED = 0
 
-# Use figure index 14..19 so we don't collide with existing figures 1..13.
 DOMAIN_FIG_IDX = {
     "rock": 14, "cloud": 15, "fluid": 16,
-    "bark": 17, "smoke": 18, "fire": 19,
+    "bark": 17, "fire": 19,
 }
 
 

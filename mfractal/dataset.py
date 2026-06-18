@@ -15,13 +15,12 @@ import csv
 import math
 import numpy as np
 
-from . import textures, fluids, clouds, bark, smoke, fire
+from . import textures, fluids, clouds, bark, fire
 from .textures import ROCK_FAMILIES
 from .fluids import FLUID_FAMILIES
 from .clouds import CLOUD_FAMILIES
 from .fluids import CX_FLUIDS
 from .bark import BARK_FAMILIES
-from .smoke import SMOKE_FAMILIES
 from .fire import FIRE_FAMILIES
 from .flagships import punch
 from .quantify import wavelet_leaders_2d, mfdfa_2d, spectrum_summary
@@ -40,8 +39,6 @@ def generate(family, n=256, complexity=None, seed=None):
         return getattr(clouds, family)(n, seed=seed, complexity=(0.5 if complexity is None else complexity))
     if family in BARK_FAMILIES:
         return getattr(bark, family)(n, seed=seed, complexity=(0.5 if complexity is None else complexity))
-    if family in SMOKE_FAMILIES:
-        return getattr(smoke, family)(n, seed=seed, complexity=(0.5 if complexity is None else complexity))
     if family in FIRE_FAMILIES:
         return getattr(fire, family)(n, seed=seed, complexity=(0.5 if complexity is None else complexity))
     fn = getattr(textures, family)
@@ -85,7 +82,6 @@ def build_dataset(out_dir, families=None, complexities=(0.0, 0.25, 0.5, 0.75, 1.
                        "type": ("fluid" if family in FLUID_FAMILIES
                                 else "cloud" if family in CLOUD_FAMILIES
                                 else "bark" if family in BARK_FAMILIES
-                                else "smoke" if family in SMOKE_FAMILIES
                                 else "fire" if family in FIRE_FAMILIES
                                 else "rock"),
                        "complexity": ("" if c is None else round(c, 4)),

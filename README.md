@@ -57,19 +57,18 @@ The full generator + estimator reference lives in
 
 ## Domains & curated families
 
-The toolbox ships 30 + 7 families across six domains. After empirical validation
+The toolbox ships 31 families across five domains. After empirical validation
 on the original 30 (see [`benchmarks/`](benchmarks/)) the **25 curated** families
-below are the recommended ones from that set; the seven post-validation
-**organic** families (bark / smoke / fire) ship in their own modules and have
-been visually validated but not yet swept on the c2 knob.
+below are the recommended ones from that set; the six post-validation
+**organic** families (bark / billow_smoke / fire) ship in their own modules and
+have been visually validated but not yet swept on the c2 knob.
 
 | Domain | Curated families | Notes |
 |---|---|---|
 | **Rock** (11) | marble, agate, weathered, granite, vesicular, turbulent, schist, serpentinite, flow_banded, convoluted, **gneiss** | gneiss = monofractal anchor (rho ~ 0) |
-| **Cloud** (8) | cascade_lognormal, stratified, billow, cirrus, cloud_mrw, cloud_multifractional, **warped_fbm**, ridged | warped_fbm = monofractal anchor; ridged is a structural-detail axis (bin by measured c2 because of a smooth-low-cx wavelet artifact) |
+| **Cloud** (9) | cascade_lognormal, stratified, billow, cirrus, cloud_mrw, cloud_multifractional, **warped_fbm**, ridged, billow_smoke | warped_fbm = monofractal anchor; ridged is a structural-detail axis (bin by measured c2); billow_smoke = broad billowing smoke cloud, fBM-beta routed |
 | **Fluid** (6) | curl_weave, choppy, eddies, vorticity, dye_diffusion, rheoscopic | eddies/vorticity = real 2D Navier-Stokes sims; dye_diffusion is sparse at low cx (bin by measured c2); rheoscopic is a near-monofractal flow-viz texture |
 | **Bark** (2) | burled_oak, riven_oak | intricate-knot wood surfaces; complexity grows knot density / cracks-per-anchor |
-| **Smoke** (2) | chimney_plume, billow_smoke | soft rising plumes; complexity maps to fBM beta (smooth haze -> turbulent wisps) |
 | **Fire** (3) | firestorm, lava_pool, volcanic_fissure | drastic spatial silhouettes: chaotic vortices / Voronoi pools / vertical cracks |
 
 **Dropped** from the original 30 after validation:

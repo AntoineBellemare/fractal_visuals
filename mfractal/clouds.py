@@ -21,6 +21,7 @@ Reliable multifractality readout is the wavelet-leader c2
 (mfractal.quantify.wavelet_leaders_2d); bin experimental stimuli by MEASURED c2.
 """
 import numpy as np
+from numpy.random import default_rng
 from scipy.ndimage import gaussian_filter, map_coordinates, zoom
 
 from .generators import _normalize01, _fractional_field
@@ -29,12 +30,12 @@ from .fluids import _vortex_flow, _advect
 
 __all__ = [
     "cascade_lognormal", "warped_fbm", "stratified", "billow", "cirrus", "ridged",
-    "cloud_mrw", "cloud_multifractional", "CLOUD_FAMILIES",
+    "cloud_mrw", "cloud_multifractional", "billow_smoke", "CLOUD_FAMILIES",
 ]
 
 CLOUD_FAMILIES = [
     "cascade_lognormal", "stratified", "billow", "cirrus", "ridged",
-    "warped_fbm", "cloud_mrw", "cloud_multifractional",
+    "warped_fbm", "cloud_mrw", "cloud_multifractional", "billow_smoke",
 ]
 
 
@@ -157,3 +158,40 @@ def cloud_multifractional(n=512, seed=None, complexity=0.5):
     f = multifractional(n, fd_center=_L(2.2, 2.7, c), fd_range=_L(0.3, 1.7, c),
                         scale=5.0, seed=seed)
     return _cloud_bright(_normalize01(f))
+
+
+def billow_smoke(n=512, seed=None, complexity=0.5):
+    """Broad rising billowing smoke cloud filling most of the frame.
+
+    complexity in [0,1]: fBM beta sweeps from 4.0 (smooth haze) down to 2.0
+    (turbulent wisps). The rise envelope gets a seed-dependent slant and
+    lateral pinch so different seeds show distinct billow shapes, not just
+    different internal textures.
+    """
+    cx = float(np.clip(complexity, 0, 1))
+    rng = default_rng(seed)
+    yy, xx = np.mgrid[0:n, 0:n].astype(float) / n
+
+    horizon = 0.05 + 0.20 * rng.random()
+    slant = 0.25 * (rng.random() - 0.5) * 2.0
+    pinch_x = 0.3 + 0.4 * rng.random()
+    pinch_w = 0.25 + 0.20 * rng.random()
+    pinch_str = 0.20 + 0.20 * rng.random()
+    rise_y = (1 - yy) + slant * (xx - 0.5)
+    pinch = 1.0 - pinch_str * np.exp(-((xx - pinch_x) ** 2) / (2 * pinch_w ** 2))
+    rise = 0.40 + 0.55 * np.clip(rise_y - horizon, 0, 1) * pinch
+    rise = gaussian_filter(rise, 1.5)
+
+    beta = 4.0 - 2.0 * cx
+    base = _normalize01(_fractional_field(n, beta=beta, seed=seed))
+
+    yyp, xxp = np.mgrid[0:n, 0:n].astype(float)
+    swirl_amp = 22.0 * cx
+    swirl_scale = n / (6.0 + 18.0 * cx)
+    fy = gaussian_filter(rng.normal(0, 1, (n, n)), swirl_scale) * swirl_amp
+    fx = gaussian_filter(rng.normal(0, 1, (n, n)), swirl_scale) * swirl_amp
+
+    field0 = 0.30 * rise + 0.65 * base * rise
+    warped = map_coordinates(field0, [(yyp + fy) % n, (xxp + fx) % n],
+                             order=1, mode="grid-wrap")
+    return _normalize01(warped)

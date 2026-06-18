@@ -217,14 +217,7 @@ PROMPTS = {
         "old oak floorboard showing wide grain bending around large dark knots, gallery photography",
     ),
 
-    # ---------- SMOKE ----------
-    "chimney_plume": _p(
-        "narrow plume of dark smoke rising from a chimney against a dim sky, dramatic backlight",
-        "thin smoke column rising straight up from a small fire, dusk sky, atmospheric photography",
-        "rising column of campfire smoke, narrow plume, evening forest backlight",
-        "industrial smokestack plume rising vertically, narrow column on overcast sky",
-        "single rising smoke plume from a chimney, narrow opaque column, dawn light",
-    ),
+    # billow_smoke (lives under cloud domain): broad billowing smoke cloud
     "billow_smoke": _p(
         "thick billowing smoke filling the frame, dramatic backlighting, volumetric haze",
         "broad smoke cloud rising from a fire, dense billowing mass, late afternoon backlight",

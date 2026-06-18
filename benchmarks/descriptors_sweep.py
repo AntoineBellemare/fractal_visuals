@@ -31,15 +31,14 @@ DOMAIN = {
     "rock":  ["marble","agate","weathered","granite","vesicular","turbulent",
               "schist","serpentinite","flow_banded","convoluted","gneiss"],
     "cloud": ["cascade_lognormal","stratified","billow","cirrus","cloud_mrw",
-              "cloud_multifractional","warped_fbm","ridged"],
+              "cloud_multifractional","warped_fbm","ridged","billow_smoke"],
     "fluid": ["curl_weave","choppy","eddies","vorticity","dye_diffusion","rheoscopic"],
     "bark":  ["burled_oak","riven_oak"],
-    "smoke": ["chimney_plume","billow_smoke"],
     "fire":  ["firestorm","lava_pool","volcanic_fissure"],
 }
 FAM2DOM = {f: d for d, fs in DOMAIN.items() for f in fs}
 DOMAIN_COLORS = {"rock":"#8c564b","cloud":"#1f77b4","fluid":"#17becf",
-                 "bark":"#7f5d2f","smoke":"#7f7f7f","fire":"#d62728"}
+                 "bark":"#7f5d2f","fire":"#d62728"}
 ALL_FAMS = [f for d in DOMAIN for f in DOMAIN[d]]
 
 # The new descriptors (skip the c1/c2/delta_alpha/alpha0 that have prior figures).

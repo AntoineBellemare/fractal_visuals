@@ -1,7 +1,7 @@
 """
 Seed-variation sweep at mid complexity (cx=0.5), one figure per domain.
 
-For each domain (rock, cloud, fluid, bark, smoke, fire):
+For each domain (rock, cloud, fluid, bark, fire):
   rows    = families in that domain
   columns = seeds 0, 1, 2, 3, 4
   cell    = grayscale mf.punch(image)
@@ -11,7 +11,6 @@ Outputs:
   benchmarks/figures/21_seed_sweep_cloud.png
   benchmarks/figures/22_seed_sweep_fluid.png
   benchmarks/figures/23_seed_sweep_bark.png
-  benchmarks/figures/24_seed_sweep_smoke.png
   benchmarks/figures/25_seed_sweep_fire.png
 """
 from __future__ import annotations
@@ -29,10 +28,9 @@ DOMAIN = {
     "rock":  ["marble","agate","weathered","granite","vesicular","turbulent",
               "schist","serpentinite","flow_banded","convoluted","gneiss"],
     "cloud": ["cascade_lognormal","stratified","billow","cirrus","cloud_mrw",
-              "cloud_multifractional","warped_fbm","ridged"],
+              "cloud_multifractional","warped_fbm","ridged","billow_smoke"],
     "fluid": ["curl_weave","choppy","eddies","vorticity","dye_diffusion","rheoscopic"],
     "bark":  ["burled_oak","riven_oak"],
-    "smoke": ["chimney_plume","billow_smoke"],
     "fire":  ["firestorm","lava_pool","volcanic_fissure"],
 }
 SEEDS = [0, 1, 2, 3, 4]
@@ -41,7 +39,7 @@ N = 384
 
 DOMAIN_FIG_IDX = {
     "rock": 20, "cloud": 21, "fluid": 22,
-    "bark": 23, "smoke": 24, "fire": 25,
+    "bark": 23, "fire": 25,
 }
 
 
