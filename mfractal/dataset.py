@@ -15,7 +15,8 @@ import csv
 import math
 import numpy as np
 
-from . import textures, fluids, clouds, bark, fire, levy, reaction_diffusion, wavelet_cascade
+from . import (textures, fluids, clouds, bark, fire, levy, wavelet_cascade,
+                aggregation, attractors, interference)
 from .textures import ROCK_FAMILIES
 from .fluids import FLUID_FAMILIES
 from .clouds import CLOUD_FAMILIES
@@ -23,8 +24,10 @@ from .fluids import CX_FLUIDS
 from .bark import BARK_FAMILIES
 from .fire import FIRE_FAMILIES
 from .levy import LEVY_FAMILIES
-from .reaction_diffusion import REACTION_DIFFUSION_FAMILIES
 from .wavelet_cascade import WAVELET_FAMILIES
+from .aggregation import AGGREGATION_FAMILIES
+from .attractors import ATTRACTOR_FAMILIES
+from .interference import INTERFERENCE_FAMILIES
 from .flagships import punch
 from .quantify import wavelet_leaders_2d, mfdfa_2d, spectrum_summary
 
@@ -46,10 +49,14 @@ def generate(family, n=256, complexity=None, seed=None):
         return getattr(fire, family)(n, seed=seed, complexity=(0.5 if complexity is None else complexity))
     if family in LEVY_FAMILIES:
         return getattr(levy, family)(n, seed=seed, complexity=(0.5 if complexity is None else complexity))
-    if family in REACTION_DIFFUSION_FAMILIES:
-        return getattr(reaction_diffusion, family)(n, seed=seed, complexity=(0.5 if complexity is None else complexity))
     if family in WAVELET_FAMILIES:
         return getattr(wavelet_cascade, family)(n, seed=seed, complexity=(0.5 if complexity is None else complexity))
+    if family in AGGREGATION_FAMILIES:
+        return getattr(aggregation, family)(n, seed=seed, complexity=(0.5 if complexity is None else complexity))
+    if family in ATTRACTOR_FAMILIES:
+        return getattr(attractors, family)(n, seed=seed, complexity=(0.5 if complexity is None else complexity))
+    if family in INTERFERENCE_FAMILIES:
+        return getattr(interference, family)(n, seed=seed, complexity=(0.5 if complexity is None else complexity))
     fn = getattr(textures, family)
     if complexity is None:
         return fn(n, seed=seed)
