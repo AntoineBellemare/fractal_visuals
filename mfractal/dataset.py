@@ -15,14 +15,15 @@ import csv
 import math
 import numpy as np
 
-from . import (textures, fluids, clouds, bark, fire, levy, wavelet_cascade,
-                attractors, interference)
+from . import (textures, fluids, clouds, bark, fire, metal, levy,
+                wavelet_cascade, attractors, interference)
 from .textures import ROCK_FAMILIES
 from .fluids import FLUID_FAMILIES
 from .clouds import CLOUD_FAMILIES
 from .fluids import CX_FLUIDS
 from .bark import BARK_FAMILIES
 from .fire import FIRE_FAMILIES
+from .metal import METAL_FAMILIES
 from .levy import LEVY_FAMILIES
 from .wavelet_cascade import WAVELET_FAMILIES
 from .attractors import ATTRACTOR_FAMILIES
@@ -46,6 +47,8 @@ def generate(family, n=256, complexity=None, seed=None):
         return getattr(bark, family)(n, seed=seed, complexity=(0.5 if complexity is None else complexity))
     if family in FIRE_FAMILIES:
         return getattr(fire, family)(n, seed=seed, complexity=(0.5 if complexity is None else complexity))
+    if family in METAL_FAMILIES:
+        return getattr(metal, family)(n, seed=seed, complexity=(0.5 if complexity is None else complexity))
     if family in LEVY_FAMILIES:
         return getattr(levy, family)(n, seed=seed, complexity=(0.5 if complexity is None else complexity))
     if family in WAVELET_FAMILIES:

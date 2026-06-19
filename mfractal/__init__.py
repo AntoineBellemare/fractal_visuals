@@ -9,7 +9,7 @@ Three process-based organic generators:
 Natural-surface textures for pareidolia (rock / marble / agate / cracked stone):
     from mfractal import rock_texture, marble, agate, weathered, granite, cellular_stone
 """
-from . import generators, quantify, descriptors, stimuli, flagships, organic, textures, fluids, dataset, clouds, bark, fire, modulations, levy, wavelet_cascade, attractors, interference, cloudscape as _cloudscape_mod
+from . import generators, quantify, descriptors, stimuli, flagships, organic, textures, fluids, dataset, clouds, bark, fire, metal, modulations, levy, wavelet_cascade, attractors, interference, cloudscape as _cloudscape_mod
 from .flagships import (multifractal_cloud, multifractional, punch,
                         complexity, sample_battery)
 from .organic import dla, stir_and_fold, branching_network
@@ -31,6 +31,7 @@ from .clouds import (cascade_lognormal, billow, cirrus, ridged,
                      CLOUD_FAMILIES)
 from .bark import burled_oak, riven_oak, BARK_FAMILIES
 from .fire import firestorm, lava_pool, volcanic_fissure, FIRE_FAMILIES
+from .metal import rust_bloom, rust_streaks, rust_pitted, METAL_FAMILIES
 from .modulations import symmetrize
 from .levy import universal_cascade, LEVY_FAMILIES
 from .wavelet_cascade import prescribed_cascade, WAVELET_FAMILIES
@@ -48,6 +49,7 @@ __all__ = [
     "generators", "quantify", "stimuli", "flagships", "organic", "textures", "fluids",
     "bark", "burled_oak", "riven_oak", "BARK_FAMILIES",
     "fire", "firestorm", "lava_pool", "volcanic_fissure", "FIRE_FAMILIES",
+    "metal", "rust_bloom", "rust_streaks", "rust_pitted", "METAL_FAMILIES",
     "modulations", "symmetrize",
     "levy", "universal_cascade", "LEVY_FAMILIES",
     "wavelet_cascade", "prescribed_cascade", "WAVELET_FAMILIES",
