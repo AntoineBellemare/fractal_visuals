@@ -53,6 +53,29 @@ SDXL output correlates with c2_target at slope ~0.8, r > 0.85.
 
 **Pass criterion:** diffusion-domain RMSE < **0.10**. If hit, regressor is production-ready.
 
+### Stage 2b — OOD validation (out-of-distribution generalization probe)
+
+**Why:** the regressor is a function of *pixels*, not prompts, but it only sees the visual distribution shaped by the natural-texture training prompts. Before committing to classifier-guidance we want to know how far it transfers beyond that domain — and whether the natural-texture prompt corpus actually constrains the system at sampling time.
+
+- Generate ~50 SDXL images spanning categories *outside* natural textures:
+  - Portraits (10) — faces in studio / outdoor light
+  - Landscapes with structure (10) — mountains, cityscapes, architecture
+  - Still-life objects (10) — fruit, glassware, books
+  - Indoor scenes (10) — kitchens, libraries, workshops
+  - Stylized/abstract photorealism (10) — long-exposure light trails, motion blur, fog
+- Label with `wavelet_leaders_2d` (CPU, ~5 min).
+- Run the Stage-2 regressor on this set. Report Pearson r and RMSE, compared against the natural-texture test set.
+
+**Decision matrix:**
+
+| OOD RMSE / in-domain RMSE | Interpretation | Action |
+|:---:|:---|:---|
+| < 1.5x | Regressor generalizes well — low-level texture features carry across content types. | Stick with natural-texture training. Classifier-guidance will work broadly. |
+| 1.5–3x | Partial generalization — reliable on texture-heavy content, noisy on semantically-rich content. | OK for natural-texture stimulus research. Broaden corpus only if downstream use needs broader steering. |
+| > 3x | Regressor is content-coupled — gradient is unreliable outside natural textures. | Stage 2c: expand prompts to ~500 spanning textures + scenes + objects + faces. ~3-5x compute. |
+
+Cheap (~30 min total). High information value — tells us whether the prompt corpus is a fundamental limit on the classifier-guidance system or just shapes the convenient sweet spot.
+
 ## Stage 3 — latent-space regressor (2–3h GPU)
 
 **Why:** at SDXL sampling time, decoding the latent through the VAE every denoising step is slow (~50 steps × VAE decode + backward). A regressor that operates **directly on the SDXL VAE latent** (4×128×128 for 1024×1024 output) skips the decode entirely. This is the architectural call that makes classifier-guidance affordable.
@@ -100,9 +123,10 @@ eps_guided = eps + guidance_scale * sigma_t * grad
 |------:|:-------|:-------------|:--------|
 | 1     | 1–2 h  | ~6 GB        | + ~0    |
 | 2     | 4–6 h  | ~12 GB       | + ~10 GB (5k SDXL PNGs) |
+| 2b    | 0.5 h  | ~12 GB       | + ~0.5 GB (50 OOD SDXL PNGs) |
 | 3     | 2–3 h  | ~10 GB       | + ~100 MB (latents cache) |
 | 4     | 3–4 h  | ~12 GB       | + ~1 GB (demo grid)     |
-| **Total** | **10–15 h** | within 16 GB | ~11 GB |
+| **Total** | **10–16 h** | within 16 GB | ~11 GB |
 
 Fits comfortably on the 4090 Laptop (16 GB VRAM).
 
