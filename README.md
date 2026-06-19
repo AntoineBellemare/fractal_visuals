@@ -57,9 +57,9 @@ The full generator + estimator reference lives in
 
 ## Domains & curated families
 
-The toolbox ships 32 families across five domains. After empirical validation
+The toolbox ships 35 families across six domains. After empirical validation
 on the original 30 (see [`benchmarks/`](benchmarks/)) and a post-2026-06
-pixel-similarity prune of near-duplicates, the **32 curated** families below
+pixel-similarity prune of near-duplicates, the **35 curated** families below
 are the current set.
 
 | Domain | Curated families | Notes |
@@ -69,6 +69,7 @@ are the current set.
 | **Fluid** (6) | curl_weave, eddies, vorticity, dye_diffusion, rheoscopic, wave_interference | eddies/vorticity = real 2D Navier-Stokes sims; dye_diffusion is sparse at low cx; rheoscopic is a near-monofractal flow-viz texture; wave_interference = sum of random plane waves with optional `crispness` knob |
 | **Bark** (2) | burled_oak, riven_oak | intricate-knot wood surfaces; complexity grows knot density / cracks-per-anchor |
 | **Fire** (3) | firestorm, lava_pool, volcanic_fissure | drastic spatial silhouettes: chaotic vortices / Voronoi pools / vertical cracks |
+| **Metal** (3) | rust_bloom, rust_pitted, rust_dewy | corrosion morphologies: irregular oxidation blooms / dark pits punched through a ferric crust / bright ferric beads on a dark base. cx grows rust coverage / pit density / bead density |
 
 **Dropped** from the original 30 after the c2 validation:
 `plume` (estimator artifact, c2 ~ -8); `cellular_stone`, `concentric`,

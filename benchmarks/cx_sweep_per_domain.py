@@ -35,6 +35,7 @@ DOMAIN = {
               "rheoscopic","wave_interference"],
     "bark":  ["burled_oak","riven_oak"],
     "fire":  ["firestorm","lava_pool","volcanic_fissure"],
+    "metal": ["rust_bloom","rust_pitted","rust_dewy"],
 }
 CXS = [0.0, 0.25, 0.5, 0.75, 1.0]
 N = 384
@@ -42,7 +43,7 @@ SEED = 0
 
 DOMAIN_FIG_IDX = {
     "rock": 14, "cloud": 15, "fluid": 16,
-    "bark": 17, "fire": 19,
+    "bark": 17, "fire": 19, "metal": 39,
 }
 
 

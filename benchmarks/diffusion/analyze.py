@@ -39,10 +39,11 @@ DOMAIN = {
               "rheoscopic", "wave_interference"],
     "bark":  ["burled_oak", "riven_oak"],
     "fire":  ["firestorm", "lava_pool", "volcanic_fissure"],
+    "metal": ["rust_bloom", "rust_pitted", "rust_dewy"],
 }
 FAM2DOM = {f: d for d, fs in DOMAIN.items() for f in fs}
 DOMAIN_COLORS = {"rock": "#8c564b", "cloud": "#1f77b4", "fluid": "#17becf",
-                 "bark": "#7f5d2f", "fire": "#d62728"}
+                 "bark": "#7f5d2f", "fire": "#d62728", "metal": "#a14b1f"}
 
 
 def load_gray(path: Path, size: int | None = None) -> np.ndarray:

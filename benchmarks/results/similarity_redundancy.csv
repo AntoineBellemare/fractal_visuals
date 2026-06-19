@@ -2,4 +2,9 @@ family_a,domain_a,family_b,domain_b,similarity,same_domain
 cascade_lognormal,cloud,cirrus,cloud,0.913,True
 cloud_multifractional,cloud,warped_fbm,cloud,0.785,True
 vesicular,rock,prescribed_cascade,cloud,0.781,False
+cascade_lognormal,cloud,rust_pitted,metal,0.777,False
+cirrus,cloud,rust_bloom,metal,0.765,False
+cascade_lognormal,cloud,rust_bloom,metal,0.76,False
+cascade_lognormal,cloud,rust_dewy,metal,0.76,False
+rust_pitted,metal,rust_dewy,metal,0.747,True
 cloud_multifractional,cloud,billow_smoke,cloud,0.722,True

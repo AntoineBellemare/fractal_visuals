@@ -31,7 +31,7 @@ from .clouds import (cascade_lognormal, billow, cirrus, ridged,
                      CLOUD_FAMILIES)
 from .bark import burled_oak, riven_oak, BARK_FAMILIES
 from .fire import firestorm, lava_pool, volcanic_fissure, FIRE_FAMILIES
-from .metal import rust_bloom, rust_streaks, rust_pitted, METAL_FAMILIES
+from .metal import rust_bloom, rust_pitted, rust_dewy, METAL_FAMILIES
 from .modulations import symmetrize
 from .levy import universal_cascade, LEVY_FAMILIES
 from .wavelet_cascade import prescribed_cascade, WAVELET_FAMILIES
@@ -49,7 +49,7 @@ __all__ = [
     "generators", "quantify", "stimuli", "flagships", "organic", "textures", "fluids",
     "bark", "burled_oak", "riven_oak", "BARK_FAMILIES",
     "fire", "firestorm", "lava_pool", "volcanic_fissure", "FIRE_FAMILIES",
-    "metal", "rust_bloom", "rust_streaks", "rust_pitted", "METAL_FAMILIES",
+    "metal", "rust_bloom", "rust_pitted", "rust_dewy", "METAL_FAMILIES",
     "modulations", "symmetrize",
     "levy", "universal_cascade", "LEVY_FAMILIES",
     "wavelet_cascade", "prescribed_cascade", "WAVELET_FAMILIES",

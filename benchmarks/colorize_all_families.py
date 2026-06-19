@@ -26,6 +26,7 @@ DOMAIN = {
               "rheoscopic","wave_interference"],
     "bark":  ["burled_oak","riven_oak"],
     "fire":  ["firestorm","lava_pool","volcanic_fissure"],
+    "metal": ["rust_bloom","rust_pitted","rust_dewy"],
 }
 
 NCOL = 6
