@@ -44,13 +44,13 @@ CURATED = {
         "gneiss",  # monofractal control
     ],
     "cloud": [
-        "cascade_lognormal", "stratified", "billow", "cirrus",
-        "cloud_mrw", "cloud_multifractional",
+        "cascade_lognormal", "billow", "cirrus",
+        "cloud_multifractional",
         "warped_fbm",  # monofractal control
         "ridged",      # structural-detail axis; bin by measured c2 (artifact at smooth low-cx)
     ],
     "fluid": [
-        "curl_weave", "choppy",        # complexity-controlled multifractal
+        "curl_weave",                  # complexity-controlled multifractal
         "eddies", "vorticity",         # NS sims, moderate multifractal
         "dye_diffusion",               # ink tendrils; degenerate at low cx, bin by measured c2
         "rheoscopic",                  # near-monofractal flow-viz silk
@@ -64,6 +64,10 @@ DROPPED = {
     "concentric": "inverted rho (more rings = more uniform spacing)",
     "breccia": "inverted rho (more fragments = more uniform tiling)",
     "veined": "high-variance per seed, weak monotonicity",
+    "stratified": "pixel-identical to cascade_lognormal at matched seed (>0.95)",
+    "cloud_mrw": "pixel-identical to prescribed_cascade at matched seed (>0.95)",
+    "choppy": "pixel-identical to cascade_lognormal at matched seed (>0.95)",
+    "levy_marble": "pixel-identical to universal_cascade at matched seed (>0.99)",
 }
 
 

@@ -29,12 +29,11 @@ FIG_DIR = ROOT / "benchmarks" / "figures"
 
 DOMAIN = {
     "rock":  ["marble","agate","weathered","granite","vesicular","turbulent",
-              "schist","serpentinite","flow_banded","convoluted","gneiss",
-              "levy_marble"],
-    "cloud": ["cascade_lognormal","stratified","billow","cirrus","cloud_mrw",
+              "schist","serpentinite","flow_banded","convoluted","gneiss"],
+    "cloud": ["cascade_lognormal","billow","cirrus",
               "cloud_multifractional","warped_fbm","ridged","billow_smoke",
               "universal_cascade","prescribed_cascade","de_jong_attractor"],
-    "fluid": ["curl_weave","choppy","eddies","vorticity","dye_diffusion",
+    "fluid": ["curl_weave","eddies","vorticity","dye_diffusion",
               "rheoscopic","wave_interference"],
     "bark":  ["burled_oak","riven_oak"],
     "fire":  ["firestorm","lava_pool","volcanic_fissure"],

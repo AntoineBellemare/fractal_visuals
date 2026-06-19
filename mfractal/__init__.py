@@ -24,15 +24,15 @@ from .textures import (rock_texture, marble, agate, weathered, granite,
                        flow_banded, schist, chert, serpentinite, veined,
                        ROCK_FAMILIES, COMPLEX_FAMILIES)
 from .fluids import (eddies, vorticity, plume, curl_weave, dye_diffusion,
-                     rheoscopic, choppy, FLUID_FAMILIES, CX_FLUIDS)
+                     rheoscopic, FLUID_FAMILIES, CX_FLUIDS)
 from .cloudscape import cloudscape, SKY_PALETTES
-from .clouds import (cascade_lognormal, stratified, billow, cirrus, ridged,
-                     warped_fbm, cloud_mrw, cloud_multifractional, billow_smoke,
+from .clouds import (cascade_lognormal, billow, cirrus, ridged,
+                     warped_fbm, cloud_multifractional, billow_smoke,
                      CLOUD_FAMILIES)
 from .bark import burled_oak, riven_oak, BARK_FAMILIES
 from .fire import firestorm, lava_pool, volcanic_fissure, FIRE_FAMILIES
 from .modulations import symmetrize
-from .levy import universal_cascade, levy_marble, LEVY_FAMILIES
+from .levy import universal_cascade, LEVY_FAMILIES
 from .wavelet_cascade import prescribed_cascade, WAVELET_FAMILIES
 from .attractors import de_jong_attractor, ATTRACTOR_FAMILIES
 from .interference import wave_interference, INTERFERENCE_FAMILIES
@@ -49,14 +49,14 @@ __all__ = [
     "bark", "burled_oak", "riven_oak", "BARK_FAMILIES",
     "fire", "firestorm", "lava_pool", "volcanic_fissure", "FIRE_FAMILIES",
     "modulations", "symmetrize",
-    "levy", "universal_cascade", "levy_marble", "LEVY_FAMILIES",
+    "levy", "universal_cascade", "LEVY_FAMILIES",
     "wavelet_cascade", "prescribed_cascade", "WAVELET_FAMILIES",
     "attractors", "de_jong_attractor", "ATTRACTOR_FAMILIES",
     "interference", "wave_interference", "INTERFERENCE_FAMILIES",
-    "eddies", "vorticity", "plume", "curl_weave", "dye_diffusion", "rheoscopic", "choppy", "FLUID_FAMILIES", "CX_FLUIDS",
+    "eddies", "vorticity", "plume", "curl_weave", "dye_diffusion", "rheoscopic", "FLUID_FAMILIES", "CX_FLUIDS",
     "dataset", "build_dataset", "validate_dataset", "generate", "wavelet_leaders_2d",
-    "clouds", "cloudscape", "SKY_PALETTES", "CLOUD_FAMILIES", "cascade_lognormal", "stratified", "billow", "cirrus",
-    "ridged", "warped_fbm", "cloud_mrw", "cloud_multifractional", "billow_smoke",
+    "clouds", "cloudscape", "SKY_PALETTES", "CLOUD_FAMILIES", "cascade_lognormal", "billow", "cirrus",
+    "ridged", "warped_fbm", "cloud_multifractional", "billow_smoke",
     "multifractal_cloud", "multifractional", "punch", "complexity", "sample_battery",
     "dla", "stir_and_fold", "branching_network",
     "rock_texture", "marble", "agate", "weathered", "granite", "cellular_stone",

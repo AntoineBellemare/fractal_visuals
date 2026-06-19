@@ -282,16 +282,13 @@ FAMILY_PALETTES = {
     "cellular_stone":       "forest_floor",
     # cloud
     "cascade_lognormal":    "storm_cell",
-    "stratified":           "dawn_sky",
     "billow":               "golden_hour",
     "cirrus":               "dawn_sky",
-    "cloud_mrw":            "storm_cell",
     "cloud_multifractional":"dawn_sky",
     "warped_fbm":           "storm_cell",
     "ridged":               "golden_hour",
     # fluid
     "curl_weave":           "oil_film",
-    "choppy":               "ocean_deep",
     "eddies":               "tidepool",
     "vorticity":            "ink",
     "dye_diffusion":        "oil_film",
@@ -302,7 +299,6 @@ FAMILY_PALETTES = {
     # billow_smoke (lives in clouds module): keep its smoky haze palette
     "billow_smoke":         "wildfire_haze",
     # post-2026-06 additions (lévy / wavelet / attractor / interference)
-    "levy_marble":          "mineral_oxide",
     "universal_cascade":    "storm_cell",
     "prescribed_cascade":   "dawn_sky",
     "de_jong_attractor":    "wildfire_haze",

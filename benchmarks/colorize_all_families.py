@@ -18,12 +18,11 @@ import mfractal as mf
 
 DOMAIN = {
     "rock":  ["marble","agate","weathered","granite","vesicular","turbulent",
-              "schist","serpentinite","flow_banded","convoluted","gneiss",
-              "levy_marble"],
-    "cloud": ["cascade_lognormal","stratified","billow","cirrus","cloud_mrw",
+              "schist","serpentinite","flow_banded","convoluted","gneiss"],
+    "cloud": ["cascade_lognormal","billow","cirrus",
               "cloud_multifractional","warped_fbm","ridged","billow_smoke",
               "universal_cascade","prescribed_cascade","de_jong_attractor"],
-    "fluid": ["curl_weave","choppy","eddies","vorticity","dye_diffusion",
+    "fluid": ["curl_weave","eddies","vorticity","dye_diffusion",
               "rheoscopic","wave_interference"],
     "bark":  ["burled_oak","riven_oak"],
     "fire":  ["firestorm","lava_pool","volcanic_fissure"],
@@ -54,7 +53,7 @@ def render():
         ax.set_title(f"{fam}\n[{dom}] · {palette}", fontsize=8)
     for i in range(len(ordered), nrow * NCOL):
         axes[i // NCOL][i % NCOL].axis("off")
-    fig.suptitle("36 families × recommended earthy palettes (cx=0.5, seed=0)",
+    fig.suptitle("32 families × recommended earthy palettes (cx=0.5, seed=0)",
                  fontsize=12, y=1.005)
     fig.tight_layout()
     out = ROOT / "benchmarks" / "figures" / "12_color_montage.png"
