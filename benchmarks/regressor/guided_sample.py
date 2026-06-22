@@ -200,8 +200,28 @@ def main():
     ap.add_argument("--grid", action="store_true", help="run the validation grid")
     ap.add_argument("--grid-targets", default="-0.7,-0.5,-0.3,-0.15,-0.05")
     ap.add_argument("--grid-seeds", type=int, default=3)
+    ap.add_argument("--prompts-module", default=None,
+                    help="use prompt[0] of each family from this module for the grid, "
+                         "e.g. prompts_intricate (for controlled-c2 pareidolia stimuli)")
+    ap.add_argument("--grid-n-prompts", type=int, default=6,
+                    help="cap how many families from --prompts-module enter the grid")
+    ap.add_argument("--grid-families", default=None,
+                    help="comma-separated family names to pick from --prompts-module "
+                         "(overrides --grid-n-prompts), e.g. frost_fern,ferrofluid,smoke_eddies")
     ap.add_argument("--out", default=str(HERE / "guided"))
     args = ap.parse_args()
+
+    grid_prompts = list(DEFAULT_PROMPTS)
+    if args.prompts_module:
+        import importlib
+        sys.path.insert(0, str(HERE.parents[1] / "benchmarks" / "diffusion"))
+        pm = importlib.import_module(args.prompts_module)
+        if args.grid_families:
+            fams = args.grid_families.split(",")
+            grid_prompts = [pm.PROMPTS[f][0] for f in fams]
+        else:
+            grid_prompts = [ps[0] for ps in pm.PROMPTS.values()][:args.grid_n_prompts]
+        print(f"grid over {len(grid_prompts)} families from {args.prompts_module}")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     pipe = build_pipe(device); pipe_ref["pipe"] = pipe
@@ -228,7 +248,7 @@ def main():
     # validation grid: prompts x seeds x targets
     targets = [float(x) for x in args.grid_targets.split(",")]
     rows = []
-    for pi, prompt in enumerate(DEFAULT_PROMPTS):
+    for pi, prompt in enumerate(grid_prompts):
         for c2t in targets:
             for s in range(args.grid_seeds):
                 img, c2m = sample(prompt, c2t, s)

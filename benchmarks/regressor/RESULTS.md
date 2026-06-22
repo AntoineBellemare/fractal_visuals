@@ -60,3 +60,18 @@ feature-caching idea (extract once → train head in seconds). Their `c2_regress
    span; don't ask granite for −0.8) → aggregate slope/r will jump.
 3. More diverse **macro photos** (only 3 texture types → held-out-texture is unreliable).
 4. Branch `regressor-gpu` is committed but **not pushed** — push when you're ready.
+
+## Intricate-prompt expansion + the intricacy≠c2 finding (2026-06-22)
+Added `benchmarks/diffusion/prompts_intricate.py` (19 pareidolia substrates) + `--prompts-module`
+wiring in generate_corpus_sdxl and guided_sample. Validation (1 img/family, native c2):
+
+STRONG/intermittent (good complex substrates, guide easily): frost_fern -0.53, ferrofluid -0.51,
+  smoke_eddies -0.41, manganese_dendrite -0.35, ink_bloom -0.32, cracked_glaze -0.30, mycelium_net -0.29
+MID: mold_colony -0.20, salt_efflorescence -0.19, oil_iridescence -0.19, slime_mold -0.18
+FLAT/uniform-detail (low c2, weak-end substrates): mammatus -0.11, lichen -0.07, rust -0.06,
+  capillary -0.06, coral -0.04, copper -0.02, marbled_ink -0.01, peeling_paint +0.02
+
+KEY FINDING: visual intricacy != multifractal c2. c2 = variance of local roughness (intermittency),
+high only when SPARSE strong structure sits on smooth ground (dendrites/spikes/wisps), not uniform busy detail.
+=> STRATEGY: decouple. Prompt sets the pareidolic SUBSTRATE; GUIDANCE (latent regressor) sets c2.
+   Use intermittent substrates for strong-c2 stimuli; flat substrates cover the weak-c2 end.

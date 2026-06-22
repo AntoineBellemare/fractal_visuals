@@ -39,9 +39,22 @@ ROOT = HERE.parents[1]
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(ROOT / "benchmarks" / "diffusion"))
 from build_corpus import measure_c2, ROOT as _ROOT  # noqa: E402
-from prompts import PROMPTS, NEG, ALL_FAMILIES        # noqa: E402
 
 MODEL_ID = "SG161222/RealVisXL_V4.0"
+
+
+def load_prompts(module_names):
+    """Merge one or more prompt modules (e.g. 'prompts', 'prompts_intricate').
+    Returns (PROMPTS, NEG, ALL_FAMILIES). NEG taken from the first module."""
+    import importlib
+    merged, neg = {}, None
+    for name in module_names:
+        m = importlib.import_module(name)
+        if neg is None:
+            neg = m.NEG
+        for fam, ps in m.PROMPTS.items():
+            merged[fam] = ps
+    return merged, neg, list(merged.keys())
 
 
 def bin_of(c2, edges):
@@ -82,10 +95,14 @@ def main():
     ap.add_argument("--steps-choices", default="30,50")
     ap.add_argument("--cfg-choices", default="5,7,9")
     ap.add_argument("--families", default="all")
+    ap.add_argument("--prompts-module", default="prompts",
+                    help="comma-separated prompt modules to merge, e.g. "
+                         "'prompts,prompts_intricate' or just 'prompts_intricate'")
     ap.add_argument("--seed-base", type=int, default=100000)
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
+    PROMPTS, NEG, ALL_FAMILIES = load_prompts(args.prompts_module.split(","))
     families = ALL_FAMILIES if args.families == "all" else args.families.split(",")
     edges = np.linspace(args.c2_lo, args.c2_hi, args.bins + 1)
     centers = (edges[:-1] + edges[1:]) / 2
