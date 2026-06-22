@@ -171,8 +171,10 @@ def _rel(path: Path) -> str:
 # --------------------------------------------------------------------------- #
 # Source builders -- each yields manifest rows {path, c1, c2, source, group}
 # --------------------------------------------------------------------------- #
-def build_procedural(complexities, seeds, verbose=True) -> list[dict]:
-    rows, fams = [], procedural_families()
+def build_procedural(complexities, seeds, verbose=True, families=None,
+                     source="procedural") -> list[dict]:
+    rows = []
+    fams = procedural_families() if families is None else list(families)
     t0 = time.time()
     failed = 0
     for fam in fams:
@@ -192,15 +194,15 @@ def build_procedural(complexities, seeds, verbose=True) -> list[dict]:
                     continue
                 if not np.isfinite(c2) or abs(c2) > C2_SANITY:
                     continue
-                fname = IMG_DIR / "procedural" / f"{fam}_c{float(c):.2f}_s{int(s)}.npy"
+                fname = IMG_DIR / source / f"{fam}_c{float(c):.2f}_s{int(s)}.npy"
                 _save_field_npy(raw, fname)
                 rows.append(dict(path=_rel(fname), c1=round(c1, 5), c2=round(c2, 5),
-                                 source="procedural", group=f"procedural:{fam}"))
+                                 source=source, group=f"{source}:{fam}"))
                 kept += 1
         if verbose:
-            print(f"  procedural {fam:24s} +{kept}")
+            print(f"  {source} {fam:24s} +{kept}")
     if failed and verbose:
-        print(f"  ({failed} procedural samples skipped due to generator errors)")
+        print(f"  ({failed} {source} samples skipped due to generator errors)")
     if verbose:
         print(f"procedural: {len(rows)} rows in {time.time()-t0:.0f}s")
     return rows
@@ -327,6 +329,8 @@ def main():
     ap.add_argument("--prescribed", action="store_true")
     ap.add_argument("--diffusion", action="store_true")
     ap.add_argument("--pareidolia", action="store_true")
+    ap.add_argument("--metal", action="store_true",
+                    help="add the merged metal/corrosion families as a held-out OOD source")
     ap.add_argument("--macro", action="append", default=[],
                     help="folder of real macro-texture photos (repeatable)")
     ap.add_argument("--all", action="store_true",
@@ -365,6 +369,11 @@ def main():
     if args.procedural:
         comps = [float(x) for x in args.proc_complexities.split(",")]
         all_rows += build_procedural(comps, range(args.proc_seeds)); flush()
+    if args.metal:
+        comps = [float(x) for x in args.proc_complexities.split(",")]
+        all_rows += build_procedural(comps, range(args.proc_seeds),
+                                     families=list(mf.METAL_FAMILIES), source="metal")
+        flush()
     if args.prescribed:
         all_rows += build_prescribed(args.prescribed_grid, args.prescribed_seeds); flush()
     if args.diffusion:

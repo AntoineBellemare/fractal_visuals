@@ -368,6 +368,9 @@ def main():
                     help="drop samples with c2 below this (extreme tails inflate RMSE "
                          "and are outside the control range); set -inf to keep all")
     ap.add_argument("--c2-max", type=float, default=0.2)
+    ap.add_argument("--ood-source", default=None,
+                    help="hold this source ENTIRELY in test (never train/val) for a true "
+                         "out-of-distribution number, e.g. --ood-source metal")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--out", default=str(HERE))
     args = ap.parse_args()
@@ -389,8 +392,15 @@ def main():
     rows = [r for r in rows if args.c2_min <= float(r["c2"]) <= args.c2_max]
     print(f"loaded {n0} rows; kept {len(rows)} in c2 [{args.c2_min}, {args.c2_max}]")
 
+    ood_rows = []
+    if args.ood_source:
+        ood_rows = [r for r in rows if r["source"] == args.ood_source]
+        rows = [r for r in rows if r["source"] != args.ood_source]
+        print(f"OOD holdout: {len(ood_rows)} '{args.ood_source}' rows -> test only")
+
     splitter = grouped_split if args.split == "group" else stratified_split
     train_rows, val_rows, test_rows = splitter(rows, seed=args.seed)
+    test_rows = test_rows + ood_rows          # OOD source evaluated, never trained
     print(f"split={args.split}: train {len(train_rows)}  val {len(val_rows)}  "
           f"test {len(test_rows)}")
     if args.split == "group":
@@ -400,8 +410,9 @@ def main():
 
     # ---- fast cached-feature path (frozen backbone) ----
     if args.cache_features and not args.finetune:
-        feats_all = get_cached_features(rows, args, device)
-        ix = {id(r): i for i, r in enumerate(rows)}
+        feat_rows = rows + ood_rows         # OOD rows still need features (test-only)
+        feats_all = get_cached_features(feat_rows, args, device)
+        ix = {id(r): i for i, r in enumerate(feat_rows)}
         sel = lambda rs: torch.from_numpy(feats_all[[ix[id(r)] for r in rs]]).float()
         yof = lambda rs: torch.tensor([float(r["c2"]) for r in rs], dtype=torch.float32)
         head, test, pred, ytrue, best_val = train_head_cached(
