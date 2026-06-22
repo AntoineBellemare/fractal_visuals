@@ -10,13 +10,12 @@ All generators take (n, seed) and return a float array in [0, 1]; pair with punc
 for display and colorize_natural() for colour.
 """
 import numpy as np
-from scipy.ndimage import map_coordinates, gaussian_filter, zoom
+from scipy.ndimage import map_coordinates, gaussian_filter
 
 from .generators import _normalize01, _fractional_field
-from .flagships import multifractal_cloud
 
 __all__ = ["eddies", "vorticity", "plume", "curl_weave", "dye_diffusion",
-           "rheoscopic", "choppy", "FLUID_FAMILIES", "CX_FLUIDS"]
+           "rheoscopic", "FLUID_FAMILIES", "CX_FLUIDS"]
 
 
 def _vel_from_w(w):
@@ -136,26 +135,6 @@ def _L(a, b, c):
     return a + (b - a) * float(c)
 
 
-def _fl_fracint(field, H):
-    n = field.shape[0]
-    ky = np.fft.fftfreq(n)[:, None]; kx = np.fft.fftfreq(n)[None, :]
-    k = np.sqrt(kx ** 2 + ky ** 2); k[0, 0] = 1
-    F = np.fft.fft2(field) / (k ** H); F[0, 0] = 0
-    return np.real(np.fft.ifft2(F))
-
-
-def _fl_cascade(n, depth, sigma, seed):
-    rng = np.random.default_rng(seed); logM = np.zeros((n, n))
-    for jj in range(1, depth + 1):
-        sps = 1 << jj
-        up = zoom(rng.normal(-sigma ** 2 / 2, sigma, (sps, sps)), n / sps, order=3)[:n, :n]
-        if up.shape != (n, n):
-            t = np.zeros((n, n)); t[:up.shape[0], :up.shape[1]] = up; up = t
-        logM += np.roll(up, (int(rng.integers(0, n)), int(rng.integers(0, n))), axis=(0, 1))
-    logM -= logM.max()
-    return np.exp(logM)
-
-
 def _fl_contrast(x, gain):
     x = _normalize01(x)
     return _normalize01(0.5 + np.tanh(gain * (x - 0.5)) / (2 * np.tanh(gain * 0.5)))
@@ -225,20 +204,6 @@ def rheoscopic(n=512, seed=None, complexity=0.5):
     return _normalize01(gaussian_filter(_normalize01(acc / (2 * steps + 1)), 0.4) * (0.45 + 0.55 * _normalize01(sp)))
 
 
-def choppy(n=512, seed=None, complexity=0.5):
-    """Water surface as a single multifractal cascade: smooth and calm at low
-    complexity, rough with dense crisp glints (figure-ground) at high complexity.
-    Light relief + strong contrast. MULTIFRACTAL (c2 ~ -0.08 .. -0.40); complexity
-    raises both visual intricacy AND multifractality in the same direction."""
-    c = complexity
-    base = _normalize01(_fl_fracint(_fl_cascade(n, 7, _L(0.32, 0.98, c), seed), _L(1.15, 0.40, c)))
-    hs = gaussian_filter(base, 0.6); hy, hx = np.gradient(hs)
-    lx, ly, lz = -0.6, -0.5, 0.72; ln = np.sqrt(lx * lx + ly * ly + lz * lz); lx, ly, lz = lx / ln, ly / ln, lz / ln
-    nrm = 1.0 / np.sqrt(hx ** 2 + hy ** 2 + 1); diffuse = np.clip((-hx * lx - hy * ly + lz) * nrm, 0, None)
-    ao = _normalize01(hs - gaussian_filter(hs, 9)); shaded = _normalize01(0.32 + 0.5 * diffuse + 0.3 * ao)
-    return _fl_contrast(_fl_bright(_normalize01(0.78 * base + 0.22 * shaded), 0.5), _L(2.8, 4.6, c))
-
-
-FLUID_FAMILIES = ["eddies", "vorticity", "plume", "curl_weave", "dye_diffusion", "rheoscopic", "choppy"]
+FLUID_FAMILIES = ["eddies", "vorticity", "plume", "curl_weave", "dye_diffusion", "rheoscopic"]
 # fluid families that accept a `complexity` argument (the NS sims do not)
-CX_FLUIDS = ["curl_weave", "dye_diffusion", "rheoscopic", "choppy"]
+CX_FLUIDS = ["curl_weave", "dye_diffusion", "rheoscopic"]

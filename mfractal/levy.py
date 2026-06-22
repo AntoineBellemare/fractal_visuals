@@ -14,10 +14,8 @@ Two intermittency knobs:
   alpha (multifractality index)  -- distribution shape
   sigma (intermittency strength) -- log-multiplier scale
 
-Families:
+Family:
   universal_cascade -- bare log-Levy cascade, brightness renormalized
-  levy_marble       -- log-Levy cascade + double domain warp (organic veining,
-                       distinct from MRW marble at the same nominal cx)
 
 Reference: Schertzer & Lovejoy (1987), "Physical modeling and analysis of rain
 and clouds by anisotropic scaling multiplicative processes", J. Geophys. Res.
@@ -25,14 +23,14 @@ and clouds by anisotropic scaling multiplicative processes", J. Geophys. Res.
 from __future__ import annotations
 import numpy as np
 from numpy.random import default_rng
-from scipy.ndimage import gaussian_filter, map_coordinates, zoom
+from scipy.ndimage import zoom
 from scipy.stats import levy_stable
 
-from .generators import _normalize01, _fractional_field
+from .generators import _normalize01
 
-__all__ = ["universal_cascade", "levy_marble", "LEVY_FAMILIES"]
+__all__ = ["universal_cascade", "LEVY_FAMILIES"]
 
-LEVY_FAMILIES = ("universal_cascade", "levy_marble")
+LEVY_FAMILIES = ("universal_cascade",)
 
 
 def _log_levy_cascade(n, alpha, sigma, seed, depth=7):
@@ -119,32 +117,3 @@ def universal_cascade(n=512, seed=None, complexity=0.5,
     cascade = _log_levy_cascade(n, alpha=a, sigma=s, seed=seed, depth=7)
     field = _fracint(cascade, h)
     return _auto_gamma(field)
-
-
-def levy_marble(n=512, seed=None, complexity=0.5,
-                alpha=None, sigma=None, H=None):
-    """Log-Levy cascade folded with a double domain warp. Reads as veined /
-    marbled stone with sparser, sharper singularities than the lognormal
-    `marble` family at the same nominal complexity.
-
-    complexity in [0, 1] routes (alpha, sigma, H) plus warp amplitude.
-    """
-    cx = float(np.clip(complexity, 0.0, 1.0))
-    a = (1.95 - 0.65 * cx) if alpha is None else float(alpha)
-    s = (0.35 + 0.55 * cx) if sigma is None else float(sigma)
-    h = (0.65 - 0.25 * cx) if H is None else float(H)
-    cascade = _log_levy_cascade(n, alpha=a, sigma=s, seed=seed, depth=7)
-    g = _auto_gamma(_fracint(cascade, h))
-    rng = default_rng(seed)
-    yyp, xxp = np.mgrid[0:n, 0:n].astype(float)
-    warp_amp_a = 12.0 + 36.0 * cx
-    warp_amp_b = 4.0 + 14.0 * cx
-    scale_a = n / 10.0
-    scale_b = n / 24.0
-    fy = gaussian_filter(rng.normal(0, 1, (n, n)), scale_a) * warp_amp_a \
-        + gaussian_filter(rng.normal(0, 1, (n, n)), scale_b) * warp_amp_b
-    fx = gaussian_filter(rng.normal(0, 1, (n, n)), scale_a) * warp_amp_a \
-        + gaussian_filter(rng.normal(0, 1, (n, n)), scale_b) * warp_amp_b
-    warped = map_coordinates(g, [(yyp + fy) % n, (xxp + fx) % n],
-                             order=1, mode="grid-wrap")
-    return _normalize01(warped)

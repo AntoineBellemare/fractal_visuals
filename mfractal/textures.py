@@ -262,6 +262,14 @@ NATURAL_PALETTES = {
                        (0.86, 0.46, 0.16), (0.96, 0.85, 0.55)],
     "hearth":         [(0.10, 0.06, 0.04), (0.36, 0.18, 0.08), (0.62, 0.32, 0.12),
                        (0.84, 0.56, 0.22), (0.94, 0.82, 0.55)],
+
+    # --- metal / corrosion ---
+    "rust_oxide":     [(0.08, 0.04, 0.02), (0.30, 0.13, 0.05), (0.62, 0.28, 0.10),
+                       (0.84, 0.50, 0.18), (0.96, 0.78, 0.42)],
+    "corrosion_grit": [(0.06, 0.04, 0.04), (0.26, 0.14, 0.08), (0.50, 0.25, 0.12),
+                       (0.72, 0.42, 0.18), (0.88, 0.70, 0.36)],
+    "ferric_dew":     [(0.06, 0.05, 0.04), (0.22, 0.14, 0.08), (0.48, 0.26, 0.12),
+                       (0.80, 0.50, 0.22), (0.98, 0.82, 0.48)],
 }
 
 
@@ -282,16 +290,13 @@ FAMILY_PALETTES = {
     "cellular_stone":       "forest_floor",
     # cloud
     "cascade_lognormal":    "storm_cell",
-    "stratified":           "dawn_sky",
     "billow":               "golden_hour",
     "cirrus":               "dawn_sky",
-    "cloud_mrw":            "storm_cell",
     "cloud_multifractional":"dawn_sky",
     "warped_fbm":           "storm_cell",
     "ridged":               "golden_hour",
     # fluid
     "curl_weave":           "oil_film",
-    "choppy":               "ocean_deep",
     "eddies":               "tidepool",
     "vorticity":            "ink",
     "dye_diffusion":        "oil_film",
@@ -302,7 +307,6 @@ FAMILY_PALETTES = {
     # billow_smoke (lives in clouds module): keep its smoky haze palette
     "billow_smoke":         "wildfire_haze",
     # post-2026-06 additions (lévy / wavelet / attractor / interference)
-    "levy_marble":          "mineral_oxide",
     "universal_cascade":    "storm_cell",
     "prescribed_cascade":   "dawn_sky",
     "de_jong_attractor":    "wildfire_haze",
@@ -311,6 +315,10 @@ FAMILY_PALETTES = {
     "firestorm":            "ember_glow",
     "lava_pool":            "volcanic",
     "volcanic_fissure":     "hearth",
+    # metal / corrosion
+    "rust_bloom":           "rust_oxide",
+    "rust_pitted":          "corrosion_grit",
+    "rust_dewy":            "ferric_dew",
 }
 
 

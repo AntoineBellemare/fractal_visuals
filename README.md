@@ -1,9 +1,10 @@
 # fractal_visuals
 
 A procedural **(multi)fractal image generation + measurement** toolbox for
-pareidolia research — generate 2D natural-surface stimuli (rocks, clouds,
-fluids) whose intermittency / multifractality can be controlled and
-independently quantified, then build c2-balanced experimental datasets.
+pareidolia research — generate 2D natural-surface stimuli across six domains
+(rock, cloud, fluid, bark, fire, metal) whose intermittency / multifractality
+can be controlled and independently quantified, then build c2-balanced
+experimental datasets.
 
 The historical scripts and notebooks from the earlier monofractal-1/f line of
 work live under [`legacy/`](legacy/). The current toolbox lives in
@@ -46,7 +47,7 @@ wl = mf.wavelet_leaders_2d(img)                   # robust log-cumulants
 print(wl["c1"], wl["c2"])                         # c1 ~ Hurst exponent; c2 << 0 means multifractal
 
 # Dispatch any family by name
-img = mf.generate("cloud_mrw", n=512, complexity=0.5, seed=1)
+img = mf.generate("prescribed_cascade", n=512, complexity=0.5, seed=1)
 ```
 
 The full generator + estimator reference lives in
@@ -57,25 +58,37 @@ The full generator + estimator reference lives in
 
 ## Domains & curated families
 
-The toolbox ships 36 families across five domains. After empirical validation
-on the original 30 (see [`benchmarks/`](benchmarks/)) the **25 curated** families
-below are the recommended ones from that set; the post-validation organic and
-new-base families (bark / billow_smoke / fire / Lévy / wavelet / attractor /
-interference) ship in their own modules and have been visually validated but
-not all swept on the c2 knob.
+The toolbox ships 35 families across six domains. Started as 30 (rock /
+cloud / fluid), shrunk to 21 through empirical c2 validation and a
+pixel-similarity prune, then grew to 35 with three new domains and additional
+cloud generators added in 2026-06. The **35 curated** families below are the
+current set.
 
 | Domain | Curated families | Notes |
 |---|---|---|
-| **Rock** (12) | marble, agate, weathered, granite, vesicular, turbulent, schist, serpentinite, flow_banded, convoluted, **gneiss**, levy_marble | gneiss = monofractal anchor (rho ~ 0); levy_marble = Lévy cascade + double warp |
-| **Cloud** (12) | cascade_lognormal, stratified, billow, cirrus, cloud_mrw, cloud_multifractional, **warped_fbm**, ridged, billow_smoke, universal_cascade, prescribed_cascade, de_jong_attractor | warped_fbm = monofractal anchor; ridged is a structural-detail axis; billow_smoke = broad billowing smoke; universal_cascade = α-stable Lévy cascade; prescribed_cascade = (c1, c2) targeting (validated, c1 RMSE 0.12 / c2 RMSE 0.08); de_jong_attractor = chaotic-map orbit density (cosmic-dust / wispy reads) |
-| **Fluid** (7) | curl_weave, choppy, eddies, vorticity, dye_diffusion, rheoscopic, wave_interference | eddies/vorticity = real 2D Navier-Stokes sims; dye_diffusion is sparse at low cx; rheoscopic is a near-monofractal flow-viz texture; wave_interference = sum of random plane waves with optional `crispness` knob |
+| **Rock** (11) | marble, agate, weathered, granite, vesicular, turbulent, schist, serpentinite, flow_banded, convoluted, **gneiss** | gneiss = monofractal anchor (rho ~ 0) |
+| **Cloud** (10) | cascade_lognormal, billow, cirrus, cloud_multifractional, **warped_fbm**, ridged, billow_smoke, universal_cascade, prescribed_cascade, de_jong_attractor | warped_fbm = monofractal anchor; ridged is a structural-detail axis; billow_smoke = broad billowing smoke; universal_cascade = α-stable Lévy cascade; prescribed_cascade = (c1, c2) targeting (validated, c1 RMSE 0.12 / c2 RMSE 0.08); de_jong_attractor = chaotic-map orbit density (cosmic-dust / wispy reads) |
+| **Fluid** (6) | curl_weave, eddies, vorticity, dye_diffusion, rheoscopic, wave_interference | eddies/vorticity = real 2D Navier-Stokes sims; dye_diffusion is sparse at low cx; rheoscopic is a near-monofractal flow-viz texture; wave_interference = sum of random plane waves with optional `crispness` knob |
 | **Bark** (2) | burled_oak, riven_oak | intricate-knot wood surfaces; complexity grows knot density / cracks-per-anchor |
 | **Fire** (3) | firestorm, lava_pool, volcanic_fissure | drastic spatial silhouettes: chaotic vortices / Voronoi pools / vertical cracks |
+| **Metal** (3) | rust_bloom, rust_pitted, rust_dewy | corrosion morphologies: irregular oxidation blooms / dark pits punched through a ferric crust / bright ferric beads on a dark base. cx grows rust coverage / pit density / bead density |
 
-**Dropped** from the original 30 after validation:
+**Dropped** from the original 30 after the c2 validation:
 `plume` (estimator artifact, c2 ~ -8); `cellular_stone`, `concentric`,
 `breccia` (inverted rho - more "complexity" = more uniform tiling); `veined`
 (very high per-seed variance).
+
+**Pruned** in 2026-06 after pixel-similarity audit
+([`benchmarks/family_similarity.py`](benchmarks/family_similarity.py)):
+`stratified`, `cloud_mrw`, `choppy`, `levy_marble` — each was a thin
+post-processing layer over a cascade shared with another family and landed
+at pixel correlation > 0.95 at matched seed.
+
+**Added** in 2026-06 to broaden the multifractal vocabulary: three new
+domains (bark, fire, metal — see table above) plus four new cloud-domain
+generators (`universal_cascade`, `prescribed_cascade`, `de_jong_attractor`,
+`wave_interference`). All additions cleared the same pixel-similarity check
+(max cross-domain pair ≤ 0.78).
 
 The complete cross-family scatter plot is at
 [`benchmarks/figures/04_cross_family_summary.png`](benchmarks/figures/04_cross_family_summary.png)

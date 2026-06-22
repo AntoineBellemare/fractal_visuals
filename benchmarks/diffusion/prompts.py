@@ -1,7 +1,7 @@
 """
 Prompts for the diffusion natural-texture sweep.
 
-32 families * 5 prompt variations. Each family gets prompts that target the
+28 families * 5 prompt variations. Each family gets prompts that target the
 distinctive visual character of its procedural counterpart, while staying in
 high-detail close-up natural-texture territory (no people, no objects).
 """
@@ -107,13 +107,6 @@ PROMPTS = {
         "towering cumulus clouds with strong shadow contrast, dramatic late afternoon light",
         "small cumulus puffs at low altitude, evenly distributed across blue sky, soft sunlight",
     ),
-    "stratified": _p(
-        "horizontal stratus cloud layers stacked across the sky, parallel cloud bands, dawn light",
-        "altostratus cloud sheet seen from below, even gray layer with subtle texture, overcast",
-        "stratocumulus cloud field with parallel rolls, low altitude, late afternoon",
-        "layered cloud strata seen from an airplane window, parallel bands at sunset",
-        "uniform stratus deck filling the sky, soft horizontal banding, diffuse daylight",
-    ),
     "billow": _p(
         "Kelvin-Helmholtz billow clouds rolling across the sky, wave-like cloud crests, dawn light",
         "rotor cloud waves over mountain ridge, parallel curling billows, dramatic side light",
@@ -127,13 +120,6 @@ PROMPTS = {
         "cirrus uncinus mares-tails sweeping across the sky, delicate hooked strands, soft sunlight",
         "high-altitude cirrus stripes against a clear blue sky, parallel ice crystal trails, daylight",
         "thin cirrostratus veil with subtle striations across the sky, soft diffuse sunlight",
-    ),
-    "cloud_mrw": _p(
-        "turbulent cumulus cloud with intricate multi-scale puffs, sharp sunlit edges, intense afternoon light",
-        "massive convective cloud face showing complex turbulence, dramatic side light",
-        "turbulent thunderhead cloud closeup, complex bubbling cauliflower structure, dramatic light",
-        "highly textured cumulonimbus cloud showing nested turbulent puffs, raking sunlight",
-        "intricate cloud face with multi-scale convective detail, sharp contrast, late afternoon",
     ),
     "cloud_multifractional": _p(
         "mixed-texture cloud showing both smooth and turbulent regions in the same frame, dramatic sky",
@@ -164,13 +150,6 @@ PROMPTS = {
         "marbled paper texture with intertwined curling streaks of pigment, top-down studio light",
         "ferrofluid surface with woven curl spikes, dramatic side light, lab photography",
         "magnetic fluid showing woven curl patterns under uniform field, top-down macro",
-    ),
-    "choppy": _p(
-        "choppy ocean surface with countless small wavelets catching sunlight, aerial close view",
-        "wind-rippled lake surface with sharp small waves, dawn light",
-        "rough sea surface texture with chaotic small whitecaps, daytime aerial photo",
-        "choppy harbor water with overlapping small waves, raking afternoon sun",
-        "wind-blown river surface with chaotic ripples and tiny crests, top-down macro",
     ),
     "eddies": _p(
         "turbulent river flow with visible eddies and vortices, top-down aerial view, daylight",

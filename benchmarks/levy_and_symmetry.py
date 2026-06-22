@@ -28,7 +28,7 @@ SEEDS = [0, 1, 2, 3, 4]
 
 
 def levy_cx_sweep():
-    fams = ["universal_cascade", "levy_marble"]
+    fams = ["universal_cascade"]
     fig, axes = plt.subplots(len(fams), len(CXS),
                              figsize=(2.4 * len(CXS), 2.5 * len(fams)),
                              squeeze=False)

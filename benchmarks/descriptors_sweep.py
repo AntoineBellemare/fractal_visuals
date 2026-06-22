@@ -29,19 +29,19 @@ FIG_DIR = ROOT / "benchmarks" / "figures"
 
 DOMAIN = {
     "rock":  ["marble","agate","weathered","granite","vesicular","turbulent",
-              "schist","serpentinite","flow_banded","convoluted","gneiss",
-              "levy_marble"],
-    "cloud": ["cascade_lognormal","stratified","billow","cirrus","cloud_mrw",
+              "schist","serpentinite","flow_banded","convoluted","gneiss"],
+    "cloud": ["cascade_lognormal","billow","cirrus",
               "cloud_multifractional","warped_fbm","ridged","billow_smoke",
               "universal_cascade","prescribed_cascade","de_jong_attractor"],
-    "fluid": ["curl_weave","choppy","eddies","vorticity","dye_diffusion",
+    "fluid": ["curl_weave","eddies","vorticity","dye_diffusion",
               "rheoscopic","wave_interference"],
     "bark":  ["burled_oak","riven_oak"],
     "fire":  ["firestorm","lava_pool","volcanic_fissure"],
+    "metal": ["rust_bloom","rust_pitted","rust_dewy"],
 }
 FAM2DOM = {f: d for d, fs in DOMAIN.items() for f in fs}
 DOMAIN_COLORS = {"rock":"#8c564b","cloud":"#1f77b4","fluid":"#17becf",
-                 "bark":"#7f5d2f","fire":"#d62728"}
+                 "bark":"#7f5d2f","fire":"#d62728","metal":"#a14b1f"}
 ALL_FAMS = [f for d in DOMAIN for f in DOMAIN[d]]
 
 # The new descriptors (skip the c1/c2/delta_alpha/alpha0 that have prior figures).

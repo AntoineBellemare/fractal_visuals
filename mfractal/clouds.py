@@ -5,7 +5,6 @@ complexity so intricacy reads as structure, not darkness.
 Families and what their complexity axis does:
   cascade_lognormal     log-normal multiplicative cascade (FIF). MULTIFRACTAL;
                         complexity raises cascade sigma -> c2 more negative.
-  stratified            anisotropic cascade -> layered sky. MULTIFRACTAL.
   billow                cascade advected by a multi-scale vortex flow. MULTIFRACTAL;
                         complexity adds finer turbulent swirls.
   cirrus                cascade sheared into crisp fibers. mildly MULTIFRACTAL;
@@ -14,7 +13,6 @@ Families and what their complexity axis does:
                         the detailed end); complexity = more / finer crisp folds.
   warped_fbm            domain-warped fBm. MONOFRACTAL control (c2~0); complexity is
                         a pure fractal-dimension / roughness axis.
-  cloud_mrw             flagship multifractal_cloud (MRW) wrapped with complexity.
   cloud_multifractional flagship multifractional (within-image varying FD), wrapped.
 
 Reliable multifractality readout is the wavelet-leader c2
@@ -25,17 +23,17 @@ from numpy.random import default_rng
 from scipy.ndimage import gaussian_filter, map_coordinates, zoom
 
 from .generators import _normalize01, _fractional_field
-from .flagships import multifractal_cloud, multifractional
+from .flagships import multifractional
 from .fluids import _vortex_flow, _advect
 
 __all__ = [
-    "cascade_lognormal", "warped_fbm", "stratified", "billow", "cirrus", "ridged",
-    "cloud_mrw", "cloud_multifractional", "billow_smoke", "CLOUD_FAMILIES",
+    "cascade_lognormal", "warped_fbm", "billow", "cirrus", "ridged",
+    "cloud_multifractional", "billow_smoke", "CLOUD_FAMILIES",
 ]
 
 CLOUD_FAMILIES = [
-    "cascade_lognormal", "stratified", "billow", "cirrus", "ridged",
-    "warped_fbm", "cloud_mrw", "cloud_multifractional", "billow_smoke",
+    "cascade_lognormal", "billow", "cirrus", "ridged",
+    "warped_fbm", "cloud_multifractional", "billow_smoke",
 ]
 
 
@@ -101,15 +99,6 @@ def warped_fbm(n=512, seed=None, complexity=0.5):
         order=1, mode="grid-wrap"))
 
 
-def stratified(n=512, seed=None, complexity=0.5):
-    c = complexity
-    m = _cascade(n, 7, _L(0.2, 0.85, c), seed)
-    ky = np.fft.fftfreq(n)[:, None]; kx = np.fft.fftfreq(n)[None, :]
-    k = np.sqrt((kx * 4) ** 2 + ky ** 2); k[0, 0] = 1
-    F = np.fft.fft2(m) / (k ** _L(0.65, 0.42, c)); F[0, 0] = 0
-    return _cloud_bright(gaussian_filter(np.real(np.fft.ifft2(F)), (0.4, 2.5)))
-
-
 def billow(n=512, seed=None, complexity=0.5):
     c = complexity
     rng = np.random.default_rng(seed)
@@ -142,14 +131,6 @@ def ridged(n=512, seed=None, complexity=0.5):
         out += amp * fold * weight; tot += amp
         weight = np.clip(fold * 1.8, 0.25, 1.0); amp *= 0.6
     return _cloud_contrast(_cloud_bright(_normalize01(out / tot), 0.55), _L(2.0, 3.2, c))
-
-
-def cloud_mrw(n=512, seed=None, complexity=0.5):
-    """Flagship multifractal_cloud (MRW) wrapped as a complexity-controlled family."""
-    c = complexity
-    f = multifractal_cloud(n, granularity=_L(3.2, 2.0, c), multifractality=_L(0.1, 2.2, c),
-                           smooth=_L(0.3, 0.1, c), seed=seed, raw=True)
-    return _cloud_bright(f)
 
 
 def cloud_multifractional(n=512, seed=None, complexity=0.5):

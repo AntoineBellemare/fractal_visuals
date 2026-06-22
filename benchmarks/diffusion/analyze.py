@@ -31,19 +31,19 @@ import mfractal as mf
 
 DOMAIN = {
     "rock": ["marble", "agate", "weathered", "granite", "vesicular", "turbulent",
-             "schist", "serpentinite", "flow_banded", "convoluted", "gneiss",
-             "levy_marble"],
-    "cloud": ["cascade_lognormal", "stratified", "billow", "cirrus", "cloud_mrw",
+             "schist", "serpentinite", "flow_banded", "convoluted", "gneiss"],
+    "cloud": ["cascade_lognormal", "billow", "cirrus",
               "cloud_multifractional", "warped_fbm", "ridged", "billow_smoke",
               "universal_cascade", "prescribed_cascade", "de_jong_attractor"],
-    "fluid": ["curl_weave", "choppy", "eddies", "vorticity", "dye_diffusion",
+    "fluid": ["curl_weave", "eddies", "vorticity", "dye_diffusion",
               "rheoscopic", "wave_interference"],
     "bark":  ["burled_oak", "riven_oak"],
     "fire":  ["firestorm", "lava_pool", "volcanic_fissure"],
+    "metal": ["rust_bloom", "rust_pitted", "rust_dewy"],
 }
 FAM2DOM = {f: d for d, fs in DOMAIN.items() for f in fs}
 DOMAIN_COLORS = {"rock": "#8c564b", "cloud": "#1f77b4", "fluid": "#17becf",
-                 "bark": "#7f5d2f", "fire": "#d62728"}
+                 "bark": "#7f5d2f", "fire": "#d62728", "metal": "#a14b1f"}
 
 
 def load_gray(path: Path, size: int | None = None) -> np.ndarray:
@@ -171,7 +171,7 @@ def main(out_dir: Path):
     md.append("")
     md.append(f"- Model: **SG161222/RealVisXL_V4.0** (SDXL fine-tune, photorealism)")
     md.append(f"- Resolution: 1024 x 1024  (measured at 512 x 512 for c2 consistency with procedural sweep)")
-    md.append(f"- 32 families x 10 images = {len(df)} stimuli")
+    md.append(f"- 28 families x 10 images = {len(df)} stimuli")
     md.append(f"- Per family: 5 prompt variations x 2 seeds")
     md.append("")
     md.append("## c2 summary (mean across 10 images per family)")
