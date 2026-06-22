@@ -61,5 +61,6 @@ benchmarks/regressor/corpus/
 benchmarks/regressor/*.pt
 benchmarks/regressor/features.npz
 benchmarks/regressor/guided/
+benchmarks/regressor/guided_*/
 benchmarks/regressor/scatter_*.png
 benchmarks/regressor/metrics_v*.json

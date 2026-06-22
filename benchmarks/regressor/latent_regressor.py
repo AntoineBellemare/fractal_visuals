@@ -176,6 +176,8 @@ def main():
     ap.add_argument("--dropout", type=float, default=0.3)
     ap.add_argument("--patience", type=int, default=40)
     ap.add_argument("--no-aug", action="store_true")
+    ap.add_argument("--c2-min", type=float, default=-1.5)
+    ap.add_argument("--c2-max", type=float, default=0.2)
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
 
@@ -186,6 +188,11 @@ def main():
     z_all = np.load(args.latents)
     meta = pd.read_csv(args.meta).to_dict("records")
     assert len(z_all) == len(meta), "latents/meta length mismatch; re-cache"
+    # match train_stage1's c2 clip so latent vs pixel is apples-to-apples
+    keep = [i for i, r in enumerate(meta)
+            if args.c2_min <= float(r["c2"]) <= args.c2_max]
+    z_all = z_all[keep]; meta = [meta[i] for i in keep]
+    print(f"kept {len(meta)} latents in c2 [{args.c2_min}, {args.c2_max}]")
     idx = {id(r): i for i, r in enumerate(meta)}            # row -> latent index
 
     torch.manual_seed(args.seed); np.random.seed(args.seed)
