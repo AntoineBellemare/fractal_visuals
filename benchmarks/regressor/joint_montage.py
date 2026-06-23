@@ -116,7 +116,11 @@ def main():
     ap.add_argument("--c2-fixed", type=float, default=-0.3)      # c1sweep
     ap.add_argument("--scale", type=float, default=180.0)
     ap.add_argument("--w1", type=float, default=1.0)
-    ap.add_argument("--w2", type=float, default=1.0)
+    ap.add_argument("--w2", type=float, default=1.0,
+                    help="c2 loss weight; set 0 for a pure-c1 demo (no c2 conflict -> "
+                         "far fewer color artifacts)")
+    ap.add_argument("--warmup", type=int, default=10,
+                    help="steps before guidance starts; higher = SDXL sets color first")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--steps", type=int, default=45)
     ap.add_argument("--thumb", type=int, default=320)
@@ -140,8 +144,8 @@ def main():
         for r, c1t in enumerate(c1v):
             for c, c2t in enumerate(c2v):
                 img = joint_guided(pipe, model, prompt, c1t, c2t, scale=args.scale,
-                                   w1=args.w1, w2=args.w2, seed=args.seed, steps=args.steps,
-                                   device=device)
+                                   w1=args.w1, w2=args.w2, warmup=args.warmup,
+                                   seed=args.seed, steps=args.steps, device=device)
                 c1m, c2m = measure_c2(img)
                 img.save(out / f"{args.family}_c1{c1t:+.2f}_c2{c2t:+.2f}.png")
                 tiles[(r, c)] = (img.resize((args.thumb, args.thumb), Image.BICUBIC), c1m, c2m)
@@ -158,8 +162,8 @@ def main():
             prompt = load_prompt(fam, modules)
             for c, c1t in enumerate(c1v):
                 img = joint_guided(pipe, model, prompt, c1t, args.c2_fixed, scale=args.scale,
-                                   w1=args.w1, w2=args.w2, seed=args.seed, steps=args.steps,
-                                   device=device)
+                                   w1=args.w1, w2=args.w2, warmup=args.warmup,
+                                   seed=args.seed, steps=args.steps, device=device)
                 c1m, c2m = measure_c2(img)
                 img.save(out / f"{fam}_c1{c1t:+.2f}.png")
                 tiles[(r, c)] = (img.resize((args.thumb, args.thumb), Image.BICUBIC), c1m, c2m)
