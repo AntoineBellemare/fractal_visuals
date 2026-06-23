@@ -38,13 +38,13 @@ def load_joint(device):
     return m
 
 
-def load_prompt(family):
+def load_prompt(family, modules=("prompts", "prompts_intricate")):
     import importlib
-    for mod in ("prompts", "prompts_intricate"):
+    for mod in modules:
         pm = importlib.import_module(mod)
         if family in pm.PROMPTS:
             return pm.PROMPTS[family][0]
-    raise SystemExit(f"family {family} not found")
+    raise SystemExit(f"family {family} not found in {modules}")
 
 
 def joint_guided(pipe, model, prompt, c1t, c2t, *, steps=45, cfg=6.0, scale=180.0,
@@ -120,8 +120,12 @@ def main():
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--steps", type=int, default=45)
     ap.add_argument("--thumb", type=int, default=320)
+    ap.add_argument("--prompts-module", default="prompts,prompts_intricate",
+                    help="comma-separated prompt modules to search for families, e.g. "
+                         "prompts_ood for the out-of-distribution probe")
     ap.add_argument("--out", default=str(HERE / "joint_montage"))
     args = ap.parse_args()
+    modules = tuple(args.prompts_module.split(","))
 
     out = Path(args.out); out.mkdir(parents=True, exist_ok=True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -131,7 +135,7 @@ def main():
     rows = []
 
     if args.mode == "grid2d":
-        prompt = load_prompt(args.family)
+        prompt = load_prompt(args.family, modules)
         tiles = {}
         for r, c1t in enumerate(c1v):
             for c, c2t in enumerate(c2v):
@@ -151,7 +155,7 @@ def main():
         fams = args.families.split(",")
         tiles = {}
         for r, fam in enumerate(fams):
-            prompt = load_prompt(fam)
+            prompt = load_prompt(fam, modules)
             for c, c1t in enumerate(c1v):
                 img = joint_guided(pipe, model, prompt, c1t, args.c2_fixed, scale=args.scale,
                                    w1=args.w1, w2=args.w2, seed=args.seed, steps=args.steps,

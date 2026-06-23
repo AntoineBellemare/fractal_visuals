@@ -12,15 +12,17 @@ and guided_sample can load it via --prompts-module prompts_intricate. These fami
 diffusion-only (no procedural counterpart); analyze.py's family pairing does not apply.
 """
 
-# Stronger detail/complexity anchor than prompts.py — pushes fine structure (more octaves).
+# Refined: give a CLEAN photoreal substrate and let guidance/scaffold set the
+# multifractality. The old "nested/hyperdetailed/labyrinthine" tail homogenised detail
+# (raised the c2 floor) and triggered guidance artifacts, so it's gone.
 HEAD = "extreme macro photograph, "
-TAIL = (", intricate fractal detail, nested self-similar structure, labyrinthine, "
-        "hyperdetailed, sharp focus, natural light, 8K, photorealistic")
+TAIL = ", sharp focus, natural light, fine detail, photorealistic, 8K"
 
-# Forbid literal faces/figures: pareidolia must come from the viewer, not the render.
-NEG = ("low quality, blurry, smooth, flat, plain, distorted, watermark, text, logo, "
-       "signature, frame, border, illustration, cartoon, painting, sketch, render, "
-       "cgi, human, person, face, eyes, figure, animal, hand, letters, symbols")
+# Forbid literal faces/figures/text: pareidolia must come from the viewer, not the render.
+# (text in NEG also suppresses the text-grid decode artifact seen under strong guidance.)
+NEG = ("low quality, blurry, distorted, watermark, text, words, letters, numbers, logo, "
+       "signature, frame, border, grid, illustration, cartoon, painting, sketch, render, "
+       "cgi, human, person, face, eyes, figure, animal, hand, symbols")
 
 
 def _p(*core):
