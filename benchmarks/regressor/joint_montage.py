@@ -170,8 +170,9 @@ def main():
                 rows.append(dict(family=fam, c1_target=c1t, c2_target=args.c2_fixed,
                                  c1_meas=round(c1m, 3), c2_meas=round(c2m, 3)))
                 print(f"  {fam:14s} c1t={c1t:+.2f} -> c1={c1m:.3f} c2={c2m:+.3f}", flush=True)
+        c2_note = "c2 free" if args.w2 == 0 else f"c2 fixed {args.c2_fixed:+.2f}"
         _grid(tiles, list(range(len(fams))), c1v, "texture", "c1 target",
-              f"Perceived-complexity control (c1), c2 fixed {args.c2_fixed:+.2f}, seed {args.seed}",
+              f"Perceived-complexity control (c1), {c2_note}, seed {args.seed}",
               out / f"joint_c1sweep_s{args.seed}.png", args.thumb)
 
     with (out / "joint_results.csv").open("w", newline="") as f:
