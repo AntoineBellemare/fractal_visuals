@@ -99,6 +99,9 @@ def main():
                     help="comma-separated prompt modules to merge, e.g. "
                          "'prompts,prompts_intricate' or just 'prompts_intricate'")
     ap.add_argument("--seed-base", type=int, default=100000)
+    ap.add_argument("--per-family", type=int, default=0,
+                    help="round-robin KEEP-ALL mode: N images per family (varied CFG/steps/"
+                         "seed), no c2 rejection -- for content diversity, not c2 balance")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
@@ -135,6 +138,37 @@ def main():
     pipe.scheduler = EulerDiscreteScheduler.from_config(pipe.scheduler.config)
     pipe.to("cuda")
     pipe.set_progress_bar_config(disable=True)
+
+    # ---- KEEP-ALL round-robin mode (content diversity) ----
+    if args.per_family:
+        new_rows, k = [], 0
+        n_total = len(families) * args.per_family
+        for fam in families:
+            prompts = PROMPTS[fam]
+            for i in range(args.per_family):
+                k += 1
+                pi = i % len(prompts)
+                steps = steps_choices[i % len(steps_choices)]
+                cfg = cfg_choices[i % len(cfg_choices)]
+                seed = args.seed_base + i
+                gen = torch.Generator(device="cuda").manual_seed(seed)
+                img = pipe(prompt=prompts[pi], negative_prompt=NEG, num_inference_steps=steps,
+                           guidance_scale=cfg, width=args.resolution, height=args.resolution,
+                           generator=gen).images[0]
+                c1, c2 = measure_c2(img)
+                if not np.isfinite(c2) or abs(c2) > 3.0:
+                    continue
+                fp = out / f"{fam}_p{pi}_s{seed}_cfg{cfg:g}_st{steps}.png"
+                img.save(fp, optimize=True)
+                new_rows.append(dict(path=Path(fp).resolve().relative_to(_ROOT).as_posix(),
+                                     c1=round(c1, 5), c2=round(c2, 5), source="diffusion",
+                                     group=f"diffusion:{fam}:{pi}"))
+                if k % 10 == 0 or k == 1:
+                    print(f"  [{k}/{n_total}] {fam:18s} c1={c1:.2f} c2={c2:+.3f}", flush=True)
+                    _flush(manifest, existing, new_rows)
+        _flush(manifest, existing, new_rows)
+        print(f"\nDONE keep-all: kept {len(new_rows)}/{n_total} diverse images")
+        return
 
     rng = np.random.default_rng(0)
     fam_hist: dict[str, list] = defaultdict(list)
