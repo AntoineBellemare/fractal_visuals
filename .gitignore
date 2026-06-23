@@ -69,3 +69,4 @@ benchmarks/regressor/metrics_v*.json
 
 # coupling experiment images (large, reproducible)
 benchmarks/regressor/c1c2_coupling/
+benchmarks/regressor/metrics_joint*.json
