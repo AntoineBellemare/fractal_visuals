@@ -151,6 +151,9 @@ def main():
                 steps = steps_choices[i % len(steps_choices)]
                 cfg = cfg_choices[i % len(cfg_choices)]
                 seed = args.seed_base + i
+                fp = out / f"{fam}_p{pi}_s{seed}_cfg{cfg:g}_st{steps}.png"
+                if fp.exists():
+                    continue                       # resumable: already generated
                 gen = torch.Generator(device="cuda").manual_seed(seed)
                 img = pipe(prompt=prompts[pi], negative_prompt=NEG, num_inference_steps=steps,
                            guidance_scale=cfg, width=args.resolution, height=args.resolution,
@@ -158,7 +161,6 @@ def main():
                 c1, c2 = measure_c2(img)
                 if not np.isfinite(c2) or abs(c2) > 3.0:
                     continue
-                fp = out / f"{fam}_p{pi}_s{seed}_cfg{cfg:g}_st{steps}.png"
                 img.save(fp, optimize=True)
                 new_rows.append(dict(path=Path(fp).resolve().relative_to(_ROOT).as_posix(),
                                      c1=round(c1, 5), c2=round(c2, 5), source="diffusion",
