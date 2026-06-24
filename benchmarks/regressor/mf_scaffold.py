@@ -51,9 +51,13 @@ def robust_unit(f, lo=1.0, hi=99.0):
     return np.clip((f - a) / (b - a + 1e-8), 0, 1)
 
 
-def scaffold_init(c2_target, n, seed):
-    """Procedural field with exact c2 -> spread-for-display RGB init image."""
-    raw = mf.prescribed_cascade(n=n, seed=seed, c2_target=float(c2_target))
+def scaffold_init(c2_target, n, seed, c1_target=None):
+    """Procedural field with exact (c1,)c2 -> spread-for-display RGB init image.
+    prescribed_cascade targets BOTH cumulants, so passing c1_target lets the scaffold
+    place the init anywhere in the (c1,c2) plane -- including the busy+strong corner SDXL
+    can't reach."""
+    kw = {} if c1_target is None else {"c1_target": float(c1_target)}
+    raw = mf.prescribed_cascade(n=n, seed=seed, c2_target=float(c2_target), **kw)
     # measure faithfully at native res (don't 8-bit-downsize a heavy-tailed field)
     c2_scaffold = float(mf.wavelet_leaders_2d(np.asarray(raw, float))["c2"])
     disp = robust_unit(np.asarray(raw, float))         # spread so structure is visible
@@ -70,6 +74,8 @@ def build_scaffold_corpus(args):
     pm = importlib.import_module(args.corpus_families)
     fams = list(pm.PROMPTS.keys())
     targets = [float(x) for x in args.corpus_targets.split(",")]
+    c1_targets = ([float(x) for x in args.corpus_c1_targets.split(",")]
+                  if args.corpus_c1_targets else [None])
     img_dir = HERE / "corpus" / "images" / "scaffold"; img_dir.mkdir(parents=True, exist_ok=True)
     manifest = HERE / "corpus" / "manifest.csv"
     import pandas as pd
@@ -84,34 +90,36 @@ def build_scaffold_corpus(args):
     pipe.to(device); pipe.set_progress_bar_config(disable=True)
 
     import time
-    n_total = len(fams) * len(targets) * args.corpus_seeds
+    n_total = len(fams) * len(targets) * len(c1_targets) * args.corpus_seeds
     k = 0; t0 = time.time()
     for fam in fams:
         prompt = pm.PROMPTS[fam][0] + TAIL
-        for t in targets:
-            for s in range(args.corpus_seeds):
-                k += 1
-                init_img, _ = scaffold_init(t, args.res, s)
-                g = torch.Generator(device=device).manual_seed(s)
-                img = pipe(prompt=prompt, negative_prompt=NEG, image=init_img,
-                           strength=args.corpus_strength, num_inference_steps=args.steps,
-                           guidance_scale=args.cfg, generator=g).images[0]
-                c1, c2 = measure_c2(img)
-                if not np.isfinite(c2) or abs(c2) > 3.0:
-                    continue
-                fp = img_dir / f"{fam}_t{t:+.2f}_s{s}.png"
-                img.save(fp, optimize=True)
-                rel = fp.resolve().relative_to(ROOT).as_posix()
-                band = f"{round(c2,1):+.1f}"
-                by_path[rel] = dict(path=rel, c1=round(c1, 5), c2=round(c2, 5),
-                                    source="scaffold", group=f"scaffold:{fam}:{band}")
-                if k % 10 == 0 or k == 1:
-                    el = (time.time() - t0) / 60
-                    print(f"  [{k}/{n_total}] {fam:16s} t={t:+.2f} -> c2 {c2:+.3f}  "
-                          f"el={el:.1f}m", flush=True)
-                    with manifest.open("w", newline="") as f:   # periodic flush
-                        w = csv.DictWriter(f, fieldnames=["path", "c1", "c2", "source", "group"])
-                        w.writeheader(); w.writerows(by_path.values())
+        for c1t in c1_targets:
+            for t in targets:
+                for s in range(args.corpus_seeds):
+                    k += 1
+                    init_img, _ = scaffold_init(t, args.res, s, c1_target=c1t)
+                    g = torch.Generator(device=device).manual_seed(s)
+                    img = pipe(prompt=prompt, negative_prompt=NEG, image=init_img,
+                               strength=args.corpus_strength, num_inference_steps=args.steps,
+                               guidance_scale=args.cfg, generator=g).images[0]
+                    c1, c2 = measure_c2(img)
+                    if not np.isfinite(c2) or abs(c2) > 3.0:
+                        continue
+                    c1tag = "" if c1t is None else f"_c1{c1t:+.2f}"
+                    fp = img_dir / f"{fam}{c1tag}_t{t:+.2f}_s{s}.png"
+                    img.save(fp, optimize=True)
+                    rel = fp.resolve().relative_to(ROOT).as_posix()
+                    band = f"{round(c1,1):+.1f},{round(c2,1):+.1f}"
+                    by_path[rel] = dict(path=rel, c1=round(c1, 5), c2=round(c2, 5),
+                                        source="scaffold", group=f"scaffold:{fam}:{band}")
+                    if k % 10 == 0 or k == 1:
+                        el = (time.time() - t0) / 60
+                        print(f"  [{k}/{n_total}] {fam:14s} c1t={c1t} t={t:+.2f} -> "
+                              f"({c1:.2f},{c2:+.3f})  el={el:.1f}m", flush=True)
+                        with manifest.open("w", newline="") as f:   # periodic flush
+                            w = csv.DictWriter(f, fieldnames=["path", "c1", "c2", "source", "group"])
+                            w.writeheader(); w.writerows(by_path.values())
     with manifest.open("w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=["path", "c1", "c2", "source", "group"])
         w.writeheader(); w.writerows(by_path.values())
@@ -142,6 +150,9 @@ def main():
                          "(source=scaffold) -- enriches the strong-c2 end for retraining")
     ap.add_argument("--corpus-targets", default="-1.1,-0.9,-0.7,-0.5,-0.3",
                     help="scaffold c2 targets to sweep (strong-weighted)")
+    ap.add_argument("--corpus-c1-targets", default=None,
+                    help="if set, joint-fill: sweep c1 x c2 to cover the whole plane, "
+                         "e.g. '0.7,1.0,1.3,1.6,1.9'")
     ap.add_argument("--corpus-seeds", type=int, default=3)
     ap.add_argument("--corpus-strength", type=float, default=0.5)
     ap.add_argument("--corpus-families", default="prompts_intricate",
