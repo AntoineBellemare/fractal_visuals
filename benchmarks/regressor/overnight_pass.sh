@@ -15,13 +15,13 @@ cp $R/joint_model.pt $R/joint_model_before.pt 2>/dev/null && log "snapshotted be
 
 log "\n## Stage 1: scaffold joint-fill (intricate substrates, c1xc2 grid) — $(stamp)"
 python -u $R/mf_scaffold.py --corpus --corpus-families prompts_intricate \
-  --corpus-c1-targets "0.7,1.1,1.5,1.9" --corpus-targets "-0.2,-0.5,-0.8,-1.1" \
+  --corpus-c1-targets=0.7,1.1,1.5,1.9 --corpus-targets=-0.2,-0.5,-0.8,-1.1 \
   --corpus-seeds 2 --corpus-strength 0.45 --res 1024 >> "$LOG" 2>&1 \
   && log "stage 1 OK" || log "stage 1 FAILED"
 
 log "\n## Stage 2: scaffold joint-fill (OOD substrates) — $(stamp)"
 python -u $R/mf_scaffold.py --corpus --corpus-families prompts_ood \
-  --corpus-c1-targets "0.7,1.1,1.5,1.9" --corpus-targets "-0.2,-0.5,-0.8,-1.1" \
+  --corpus-c1-targets=0.7,1.1,1.5,1.9 --corpus-targets=-0.2,-0.5,-0.8,-1.1 \
   --corpus-seeds 1 --corpus-strength 0.45 --res 1024 >> "$LOG" 2>&1 \
   && log "stage 2 OK" || log "stage 2 FAILED"
 
