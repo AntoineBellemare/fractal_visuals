@@ -71,3 +71,5 @@ benchmarks/regressor/metrics_v*.json
 benchmarks/regressor/c1c2_coupling/
 benchmarks/regressor/metrics_joint*.json
 benchmarks/regressor/reachable/
+benchmarks/regressor/metrics_noise_aware.json
+benchmarks/regressor/noise_aware_test/
