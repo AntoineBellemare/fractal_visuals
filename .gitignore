@@ -53,3 +53,21 @@ datasets/_scratch/
 # We still track manifest.csv / analysis.csv / report/ — those are the artifacts.
 benchmarks/diffusion/out/*/
 !benchmarks/diffusion/out/report/
+
+# Regressor corpus + weights + run artifacts. The corpus is machine-specific
+# (absolute macro-photo paths) and everything here is reproducible from the scripts,
+# so we track only the code + PLAN/README, not the heavy/per-run outputs.
+benchmarks/regressor/corpus/
+benchmarks/regressor/*.pt
+benchmarks/regressor/features.npz
+benchmarks/regressor/guided/
+benchmarks/regressor/guided_*/
+benchmarks/regressor/montage*/
+benchmarks/regressor/scaffold*/
+benchmarks/regressor/scatter_*.png
+benchmarks/regressor/metrics_v*.json
+
+# coupling experiment images (large, reproducible)
+benchmarks/regressor/c1c2_coupling/
+benchmarks/regressor/metrics_joint*.json
+benchmarks/regressor/reachable/
