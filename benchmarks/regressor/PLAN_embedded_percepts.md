@@ -1,119 +1,172 @@
-# Plan: embedded percepts in controlled-multifractality textures
+# Strategies for embedding percepts in controlled-multifractality textures
 
-**Goal.** Generate a natural fractal texture that simultaneously (a) hits a
-target multifractality (c1/c2) and (b) contains an *embedded percept* — a face,
-animal, figure — woven into the texture rather than pasted on top. The percept
-must be present enough to trigger recognition yet ambiguous enough to stay "in"
-the texture. That ambiguity band *is* the pareidolia stimulus.
+**Goal.** Produce a natural fractal texture that simultaneously (a) hits a target
+multifractality (c1/c2) and (b) contains an *embedded percept* — a face, animal,
+figure — woven into the texture rather than pasted on top. The percept must be
+present enough to trigger recognition yet ambiguous enough to stay *in* the
+texture. That ambiguity band *is* the pareidolia stimulus.
 
 This is a **two-constraint generation** problem: one global statistical
-constraint (multifractality) and one local semantic constraint (the percept).
+constraint (multifractality) + one local structural constraint (the percept).
 
-## Key insight — the constraints are largely orthogonal
+## Two framing insights
 
-c2 is a *global* statistic (variance of local roughness / intermittency); a
-percept is a *local* structure. A subtly embedded face barely moves global c2,
-so the two can be controlled largely independently. This is the same shape as
-the `RESULTS.md` finding "visual intricacy != c2 → decouple substrate from c2",
-now generalized: **semantic content != c2 → guide them with separate critics.**
+**1. The constraints are largely orthogonal.** c2 is a *global* statistic
+(variance of local roughness / intermittency); a percept is a *local* structure.
+A subtly embedded face barely moves global c2, so the two can be steered nearly
+independently. Same shape as the `RESULTS.md` finding "intricacy != c2 → decouple
+substrate from c2", generalized: **semantic content != c2.**
 
-The deliverable is therefore not a single image but a 2-D map in
-`(c2, percept_detectability)` space — the pareidolia target is a *region*
-(ambiguous-but-findable), not a point.
+**2. A percept can live in a texture two different ways** — this splits the whole
+strategy space:
 
-## Approach (a) — compositional guidance ← START HERE (implemented)
+- **First-order (luminance) embedding** — the percept is faint *brightness*
+  structure (light/dark forms shaped like a face). Easy to see, easy to make,
+  closest to ordinary pareidolia (clouds, stains).
+- **Second-order (statistical / texture-defined) embedding** — the percept is a
+  boundary in *local statistics* (a region of different c2 / roughness /
+  orientation) with **no mean-luminance cue**. Invisible to first-order
+  (brightness) analysis; the form pops out only from a change in texture. This is
+  the *pure fractal-pareidolia* stimulus and it's squarely in our wheelhouse —
+  we already control c2 spatially.
 
-Training-free. Extends the verified `guided_sample.py` DPS loop with a second
-critic. At each denoising step, on the predicted clean latent x0:
+The deliverable is not one image but a **2-D map in (c2, percept-detectability)
+space**; the pareidolia target is the mid-detectability ridge at each c2.
+
+## Operating constraints (2026-06)
+
+- Desktop locked → `latent_model.pt` (the Stage-3 c2 regressor) and the trained
+  ControlNet are **both unavailable**, indefinitely.
+- We will **not** do a full GPU re-run (corpus regen + retrain) on Phil's machine.
+- ⇒ Weight the plan toward strategies that need **neither blocked artifact** —
+  ideally pure-CPU procedural ones runnable *today*, then light GPU-inference ones
+  that reuse only *downloadable* models.
 
 ```
-loss   = c2_scale     * ||regressor(x0)      - c2_target||²     # texture stats
-       + percept_scale * (1 - cos(CLIP_img(decode(x0)), CLIP_txt("a face")))  # content
-x_t   <- x_t - ( c2_scale·ĝ_c2  +  percept_scale·ĝ_percept )    # grads normalized separately
+strategy                              tier  compute   needs model.pt  needs training  runnable NOW
+1 luminance-field embedding (1st)      1     CPU        no              no              YES
+2 texture-defined embedding (2nd)      1     CPU        no              no              YES   <- distinctive
+3 frequency-domain / hybrid image      1     CPU        no              no              YES
+4 off-the-shelf ControlNet + img2img   2     GPU        no*             no (stock CN)   when GPU
+5 SDEdit from a procedural hybrid       2     GPU        no*             no              when GPU
+6 compositional guidance (Plan A)      3     GPU        YES             no              parked (artifact)
+7 dual-condition MF-ControlNet         3     GPU+train  YES             YES             parked (no re-run)
+  * Tier-2 needs c2 only as a *measurement/substrate*, not a guidance critic, so it
+    avoids model.pt — c2 comes from the procedural substrate it starts from.
 ```
 
-- **c2 critic**: Stage-3 latent regressor (`latent_model.pt`) — reads the latent
-  directly, cheap.
-- **percept critic**: CLIP image↔text similarity — needs pixels, so VAE-decodes
-  x0 each guided step (the heavy part; mitigated by `--percept-every`, VAE
-  slicing/tiling, optional region crop).
-- **The pareidolia dial** = `percept_scale / c2_scale`. Too high → pasted face;
-  too low → pure texture; sweet spot → a face *in* the texture.
+---
 
-Implemented in **`embed_percept.py`**. Reuses `build_pipe`, `load_regressor`,
-`_encode_prompt` from `guided_sample.py` so the diffusion/guidance path is
-identical to the validated one.
+## Tier 1 — runnable now (pure CPU, procedural toolbox, nothing blocked)
 
-**First runs (once GPU is available):**
-1. `--dial --c2-target -0.4 --percept-scales 0,30,60,120,240` — sweep the dial at
-   fixed c2. Expect: percept_sim climbs while measured c2 stays ~flat
-   (confirms orthogonality) — and find the ambiguity band visually.
-2. Repeat at c2 ∈ {-0.7,-0.4,-0.15} to check the dial behaves across the
-   intermittency range.
-3. `--region 0.3,0.25,0.7,0.75` — localize the percept; verify it concentrates
-   the face spatially without wrecking global c2.
-4. Tune `c2_scale`/`percept_scale` on a small grid first (scales ALWAYS need
-   per-setup tuning), then scale up.
+These reuse `mfractal`'s existing c2-controlled fields. No diffusion model, no
+`latent_model.pt`, no GPU. We can build and validate all three immediately.
 
-**Substrate choice matters.** Per RESULTS.md, intermittent substrates
-(frost_fern, ferrofluid, smoke_eddies, manganese_dendrite) carry strong-c2 well;
-flat ones (lichen, marble, peeling_paint) cover the weak-c2 end. The percept
-reads most naturally on substrates whose large light/dark forms can *become* the
-face — the same forms the visual system already latches onto.
+### Strategy 1 — luminance-field embedding (first-order)
+Modulate a c2-controlled procedural field by a faint low-frequency percept mask:
 
-## Approach (b) — structure-conditioned init / layout bias
+```
+field' = field * (1 + eps * (percept_lowpass - 0.5))
+```
 
-Inject the percept as a *faint* low-frequency prior (a face silhouette / depth /
-edge map) — as a weak Canny/depth ControlNet OR a soft bias in the initial
-noise — then let c2-guidance fill the texture so the face *emerges* from the
-texture's own forms. "Pareidolia by construction": put the percept at the large
-scale where faces are read, fractal detail supplies plausible deniability.
-Cheap; complements (a). Needs the trained ControlNet only for the Canny/depth
-variant; the noise-bias variant is training-free.
+`percept_lowpass` = a blurred luminance map of the target (face silhouette).
+Because the modulation is *low-frequency* and small (`eps` ~ 0.05–0.2), it shifts
+where the large light/dark forms sit without touching local roughness — so c2 is
+preserved (verify with `wavelet_leaders_2d`). `eps` is the embedded-ness dial.
+- **Pros:** trivial, deterministic, c2-safe, instant. Good baseline + sanity check.
+- **Cons:** first-order cue → can look like a watermark if `eps` too high; least
+  "novel" scientifically.
 
-## Approach (c) — dual-condition ControlNet (production)
+### Strategy 2 — texture-defined / second-order embedding ← the distinctive one
+Render **two** fields at slightly different c2 (or roughness/orientation),
+matched in mean luminance and contrast, and composite them through the percept
+mask:
 
-Two conditioning channels: a multifractal (local-c2) map + a percept/saliency
-map. Reliable, fast, spatially precise — but needs images labelled with both.
-Best built by using (a) to *generate* a corpus, then distilling into the
-ControlNet. Heavy; do it AFTER (a) tells us what "embedded" operationally means.
+```
+field' = mask * field_c2A + (1 - mask) * field_c2B    # mask = soft face region
+```
 
-## Approach (d) — frequency-domain embedding (baseline/sanity)
+The face then exists *only* as a change in local fractal statistics — no
+brightness boundary. This is texture-segmentation pop-out (a "second-order"
+form): a percept that first-order/luminance models literally cannot detect but
+the visual system can. Knobs: |c2A − c2B| (the statistical contrast = detectability
+dial), mask sharpness, whether the differing axis is c2, c1, or anisotropy.
+- **Pros:** scientifically novel, uses our core c2 machinery, a genuinely new
+  *kind* of pareidolia stimulus, fully CPU. Strong paper angle.
+- **Cons:** harder to make perceptible (needs enough statistical contrast);
+  requires careful luminance/contrast matching so no first-order cue leaks in.
 
-Hybrid-images / steganography: place face energy in a frequency band shaped to
-respect the 1/f^β spectrum so it doesn't break the c2 measurement, then check
-it's still perceptible. Elegant and controllable, but tends to read as "a
-filtered photo" rather than an organic texture. Keep as a comparison point.
+### Strategy 3 — frequency-domain / hybrid-image embedding
+Classic Oliva-style hybrid: inject the percept's energy into a frequency band
+shaped to respect the field's 1/f^β spectrum so the c2 measurement is unmoved,
+then verify perceptibility. CPU, controllable.
+- **Pros:** precise spectral control; complements 1/2 as a comparison point.
+- **Cons:** tends to read as "a filtered photo" rather than an organic texture.
+
+---
+
+## Tier 2 — needs a GPU but only downloadable models (no blocked artifacts)
+
+Resume when a GPU is available; these avoid `latent_model.pt` by getting c2 from
+the *procedural substrate* rather than a guidance critic.
+
+### Strategy 4 — off-the-shelf ControlNet + procedural-c2 substrate
+Key point: we do **not** need our custom MF-ControlNet for the *percept*. A
+**stock** Canny/depth/scribble SDXL ControlNet (downloadable, no training) can
+impose a faint percept layout. Feed it a Tier-1 procedural texture (already at the
+target c2) via img2img, condition the layout weakly on the percept edge map, and
+let the model naturalize it. c2 is set by the substrate + measured after.
+- **Pros:** photoreal output, no training, no model.pt; percept layout is explicit
+  and spatially precise.
+- **Cons:** needs SDXL + a stock ControlNet download + GPU; c2 control is
+  open-loop (measure, don't guide) unless we later add the regressor back.
+
+### Strategy 5 — SDEdit / img2img from a procedural hybrid
+Make a crude percept⊕texture composite on CPU (Strategy 1 or 2 output), run img2img
+at moderate denoise strength so SDXL dissolves the seams into natural texture.
+Strength is the embedded-ness dial; substrate sets c2.
+- **Pros:** simplest GPU path, no extra models, naturalizes Tier-1 outputs.
+- **Cons:** strength trades off percept-survival vs naturalness; c2 drifts under
+  heavy denoise (re-measure, pick strength accordingly).
+
+---
+
+## Tier 3 — needs GPU + the blocked artifacts (parked)
+
+### Strategy 6 — compositional classifier guidance (Plan A)
+Implemented in **`embed_percept.py`**: SDXL DPS loop with the latent c2 regressor
+*and* a CLIP percept critic, gradients normalized separately, ratio
+`percept_scale/c2_scale` = the dial. The strongest closed-loop control of both
+axes at once. **Blocked**: requires `latent_model.pt` + GPU. Ready to run when both
+return.
+
+### Strategy 7 — dual-condition MF-ControlNet (production)
+Two conditioning channels (local-c2 map + percept/saliency map), trained on a
+corpus generated by the strategies above. Reliable, fast, spatially precise — but
+needs the training run we've ruled out for now. Parked.
+
+---
 
 ## Evaluation (the actual deliverable)
 
-Two metrics per image:
-- **c2** — measured via `measure_c2` (wavelet leaders) / the regressor.
-- **detectability** — CLIP cosine sim to the percept text now; upgrade to a
-  face-detector confidence and, ideally, a small human/CLIP recognition-rate
-  study. (CLIP-as-critic and CLIP-as-metric should eventually be *different*
-  models to avoid the guidance optimizing its own evaluator.)
+Two metrics per image: **c2** (wavelet leaders / `measure_c2`) and
+**detectability** (CLIP→face sim now; upgrade to a face-detector confidence and a
+small human/CLIP recognition study). Note first- vs second-order percepts will
+score differently on a luminance-only detector — that contrast is itself a result.
+Plot the swept images in (c2, detectability) space; the pareidolia band is the
+mid-detectability ridge. Guard against critic=evaluator leakage (don't score with
+the same CLIP that guided).
 
-Plot the swept images in `(c2, detectability)` space. The pareidolia band is the
-mid-detectability ridge at each c2. That map is what we hand to the perception
-side of the project.
+## Recommendation under the current constraints
 
-## Risks / watch-list
+Start **Tier 1 now** — it needs nothing blocked and produces real stimuli today:
+- **Strategy 2 (texture-defined)** as the scientifically distinctive deliverable —
+  a percept that exists purely as a fractal-statistics boundary, which is the most
+  original thing this project can make and leans entirely on our c2 machinery.
+- **Strategy 1 (luminance)** as the fast baseline to calibrate the detectability
+  dial against.
 
-- **VAE-decode memory** at 1024 with backprop through VAE+CLIP alongside SDXL in
-  16 GB. Mitigations wired: VAE slicing/tiling, `--percept-every`, region crop;
-  fallbacks: decode at 512, or guide a downsampled x0.
-- **fp16 VAE decode** can NaN on SDXL; if so decode the VAE in fp32 for guidance.
-- **Adversarial percept** — CLIP guidance can produce a high-similarity image
-  that doesn't look like a face to a human (the classic critic-fooling failure).
-  Cap percept_scale; validate with a held-out detector, not just CLIP.
-- **Critic = evaluator leakage** — don't score detectability with the same CLIP
-  that guided it.
-
-## Sequencing
-
-Approach (a) is the right first move under *every* strategy: training-free,
-reuses the regressor we already trust, produces the continuous embedded-ness
-knob directly, and generates the corpus that de-risks (b)/(c). The GPU work
-already queued (the regressor) is the foundation for all of this — it's the c2
-critic for guidance and the metric for everything downstream.
+Both are pure CPU, deterministic, and reversible. Tier 2 (stock-ControlNet /
+SDEdit) is the natural next step the moment any GPU is available, since it still
+sidesteps `latent_model.pt`. Tier 3 (Plan A guidance, MF-ControlNet) resumes only
+when the desktop returns with the trained artifacts.
