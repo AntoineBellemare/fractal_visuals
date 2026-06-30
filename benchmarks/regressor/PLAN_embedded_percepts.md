@@ -1,5 +1,12 @@
 # Strategies for embedding percepts in controlled-multifractality textures
 
+> **EMPIRICAL UPDATE.** The CPU strategies below have been prototyped. Confirmed
+> working code + findings (which routes survived, which are dead ends and why)
+> live in [`../percept_embedding/`](../percept_embedding/README.md). Short
+> version: **S1 luminance** (first-order) and **P3 wavelet-subband + c1-lock**
+> (second-order, visible *and* multifractal) are the keepers; spatial
+> texture-compositing and Fourier-phase embedding are dead ends.
+
 **Goal.** Produce a natural fractal texture that simultaneously (a) hits a target
 multifractality (c1/c2) and (b) contains an *embedded percept* — a face, animal,
 figure — woven into the texture rather than pasted on top. The percept must be
