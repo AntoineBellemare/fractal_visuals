@@ -63,6 +63,9 @@ def main():
     ap.add_argument("--warmup", type=int, default=14)
     ap.add_argument("--steps", type=int, default=40)
     ap.add_argument("--res", type=int, default=1024)
+    ap.add_argument("--low-vram", action="store_true",
+                    help="attention/VAE slicing — avoids the host-RAM spill when other GPU "
+                         "apps leave <2GB headroom (big net speedup on a busy desktop)")
     ap.add_argument("--out", default=str(HERE / "natural_atlas"))
     args = ap.parse_args()
 
@@ -79,6 +82,13 @@ def main():
           f"{len(fams)*len(tgts)*args.seeds} images", flush=True)
     pipe = gs.build_pipe(device)
     model = jm.load_joint(device)
+    if args.low_vram:
+        # Windows/WDDM spills to host RAM when VRAM is over-committed (~6x slowdown).
+        # Slicing keeps the peak well under the cap so we stay resident.
+        pipe.enable_attention_slicing("max")
+        pipe.enable_vae_slicing()
+        torch.cuda.empty_cache()
+        print(f"low-vram mode on; VRAM now {torch.cuda.memory_allocated()/2**30:.1f} GiB", flush=True)
 
     # resume: skip rows already done
     done = set()

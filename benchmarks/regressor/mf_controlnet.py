@@ -33,6 +33,7 @@ import mfractal as mf                                       # noqa: E402
 from mf_scaffold import robust_unit as robust_unit_disp, MODEL_ID, NEG, TAIL  # noqa: E402
 from train_stage1 import robust_unit as robust_unit_meas   # measurement (lo=0.5,hi=99.5)  # noqa: E402
 from joint_regressor import JointCNN                        # noqa: E402
+from build_corpus import measure_c2                         # ground-truth estimator  # noqa: E402
 
 VAE_ID = "madebyollin/sdxl-vae-fp16-fix"
 SDXL_SCALING = 0.13025
@@ -87,14 +88,21 @@ def field_to_control(field, log_leader=False):
 
 
 class JointMeasurer:
-    """Achieved (c1,c2) of an output PNG — replicates training preprocessing exactly."""
+    """Achieved (c1,c2) of an output PNG.
+
+    Returns BOTH readings, because they are not interchangeable:
+      * estimator = mfractal.wavelet_leaders_2d — the GROUND TRUTH. Always quote this.
+      * regressor = joint_model.pt — fast, but it is the same network whose gradient drives
+        classifier guidance, so on GUIDED outputs it is adversarially attacked and reads
+        optimistically. Their gap is itself a useful diagnostic (flag if > 0.05).
+    """
     def __init__(self, vae, device):
         self.vae, self.device = vae, device
         ck = torch.load(HERE / "joint_model.pt", map_location=device)
         self.m = JointCNN(in_ch=4).to(device); self.m.load_state_dict(ck["model"]); self.m.eval()
 
     @torch.no_grad()
-    def __call__(self, pil):
+    def regressor(self, pil):
         f = robust_unit_meas(np.asarray(pil.convert("L"), float))   # lo=0.5,hi=99.5
         t = torch.from_numpy(f)[None, None].float()
         if t.shape[-1] != 1024:
@@ -103,6 +111,12 @@ class JointMeasurer:
         z = self.vae.encode(t).latent_dist.mean * SDXL_SCALING
         c1, c2 = self.m(z.float()).cpu().numpy()[0]
         return float(c1), float(c2)
+
+    def __call__(self, pil):
+        """-> (c1_true, c2_true, c1_reg, c2_reg); ground truth first."""
+        c1t, c2t = measure_c2(pil)                                  # wavelet leaders, truth
+        c1r, c2r = self.regressor(pil)
+        return c1t, c2t, c1r, c2r
 
 
 def generate(pipe, prompt, control, cn_scale, *, guidance_end=1.0, steps=40, cfg=6.0,
@@ -160,9 +174,10 @@ def main():
             img = generate(pipe, load_prompt(args.substrate), ctrl, s,
                            guidance_end=args.guidance_end, steps=args.steps, cfg=args.cfg,
                            seed=args.seed, res=args.res, device=device)
-            c1m, c2m = meas(img)
+            c1m, c2m, c1r, c2r = meas(img)
             img.save(out / f"{args.substrate.replace(' ','_')[:20]}_cn{s:.2f}.png")
-            print(f"  cn_scale {s:.2f} -> achieved (c1={c1m:.3f}, c2={c2m:+.3f})  "
+            print(f"  cn_scale {s:.2f} -> TRUE (c1={c1m:.3f}, c2={c2m:+.3f}) | "
+                  f"regressor (c1={c1r:.3f}, c2={c2r:+.3f})  "
                   f"target ({args.c1_target},{args.c2_target})", flush=True)
         return
 
@@ -181,12 +196,13 @@ def main():
                     img = generate(pipe, prompt, ctrl, s, guidance_end=args.guidance_end,
                                    steps=args.steps, cfg=args.cfg, seed=args.seed,
                                    res=args.res, device=device)
-                    c1m, c2m = meas(img)
+                    c1m, c2m, c1r, c2r = meas(img)
                     fp = out / "images" / f"{fam}_c1{c1t:+.2f}_c2{c2t:+.2f}_cn{s:.2f}.png"
                     img.save(fp)
                     rows.append(dict(family=fam, c1_target=c1t, c2_target=c2t, cn_scale=s,
                                      field_c1=round(fc1, 3), field_c2=round(fc2, 3),
                                      c1_out=round(c1m, 3), c2_out=round(c2m, 3),
+                                     c1_reg=round(c1r, 3), c2_reg=round(c2r, 3),
                                      c1_err=round(abs(c1m - c1t), 3), c2_err=round(abs(c2m - c2t), 3)))
                     print(f"  {fam:14s} t=({c1t:+.1f},{c2t:+.1f}) cn={s:.2f} -> "
                           f"({c1m:.2f},{c2m:+.2f})", flush=True)
