@@ -46,7 +46,46 @@ an approximation**. Verified: `mean(c1 map)` vs the image's own label → **r = 
 Quantisation step ≈ 0.0086 in both cumulants — **5× finer** than the regressor's own RMSE
 (0.042 / 0.060), so the encoding is not the bottleneck.
 
-### Critical implementation detail: do NOT call the estimator per crop
+### ⚠️ CORRECTION AFTER IMPLEMENTATION — the per-cell local map is noise-dominated
+
+The scoping pass claimed "90–97 % of the map's spatial variance is real, image-locked
+heterogeneity". **On implementation this did not replicate.** Measured on photographic corpus
+images, comparing each image's map spatial sd against the sd produced by a *statistically
+homogeneous* `prescribed_cascade` field at the **same** global (c1,c2) — i.e. a pure
+estimator-noise reference:
+
+| win | grid | real sd c1 | noise c1 | signal | real sd c2 | noise c2 | signal |
+|---|---|---|---|---|---|---|---|
+| 256 | 16 | 0.148 | 0.182 | **0 %** | 0.149 | 0.153 | **0 %** |
+| 256 | 8 | 0.146 | 0.129 | 47 % | 0.153 | 0.159 | **0 %** |
+| 384 | 16 | 0.109 | 0.179 | **0 %** | 0.113 | 0.108 | 28 % |
+| 512 | 8 | 0.081 | 0.111 | **0 %** | 0.087 | 0.083 | 30 % |
+
+At **no** window/grid setting does spatial signal clearly exceed noise, and the settings that
+suppress noise do so by making the window near-global (degenerate — the map becomes constant).
+**Sub-image cumulant estimation is not reliable enough to be a per-cell training label.**
+
+What *did* replicate: the map's **mean** is an excellent estimate of the global label —
+`corr(map_mean, global)` = **+0.9935** (c1) and **+0.9984** (c2), near-identity affine.
+
+**Revised design — exact labels only.** Training conditioning is never estimated per cell:
+- **Uniform samples** — the entire map is the image's own measured (c1,c2). Exact by definition.
+- **Mosaic samples** (30 %) — 2×2 tiles from images with *different* statistics, each map region
+  carrying that tile's own measured label. This is what forces the ControlNet to read the map
+  **locally** rather than collapsing it to a global scalar; verified map spatial sd ≈ 0.17.
+
+This is *stronger* than the original scheme on both counts that matter: labels are exact
+(verified identity below), and — because inference maps (uniform / gradient / shape) are smooth
+while the rejected local maps were noisy — the revised training distribution actually **matches
+inference**, removing the distribution-shift risk rather than adding it. Since the ControlNet is
+fully convolutional, a smooth painted map looks locally like a uniform training sample everywhere.
+
+**Verified end-to-end on the built dataset:**
+- conditioning encode→decode round-trip error: c1 **0.0046**, c2 **0.0039** (≪ regressor RMSE);
+- **identity check** — the target image measured against its conditioning label:
+  c1 **0.00003**, c2 **0.00001**. The fade trap is structurally impossible, not merely avoided.
+
+### Why the estimator must not be called per crop (still true, and why)
 
 Naive `wavelet_leaders_2d` on independent W×W crops **fails**, because the estimator auto-picks
 its fit band from the input size (`J = max(3, log2(n)−3)`), so the octaves being fitted move with
