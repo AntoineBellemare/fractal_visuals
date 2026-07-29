@@ -73,3 +73,9 @@ benchmarks/regressor/metrics_joint*.json
 benchmarks/regressor/reachable/
 benchmarks/regressor/metrics_noise_aware.json
 benchmarks/regressor/noise_aware_test/
+benchmarks/regressor/natural_atlas/
+benchmarks/regressor/gradient_pass/
+benchmarks/regressor/creative/
+benchmarks/regressor/showcase/
+benchmarks/regressor/mf_controlnet/
+benchmarks/regressor/noise_aware_test/

@@ -130,7 +130,7 @@ def main():
     idx = {id(r): i for i, r in enumerate(rows)}
     sub = lambda rs: (z_all[[idx[id(r)] for r in rs]], rs)
     dl = lambda zr, aug, sh: DataLoader(JointSet(*zr, aug), batch_size=args.batch,
-                                        shuffle=sh, num_workers=2)
+                                        shuffle=sh, num_workers=0)  # latents in RAM; workers only add Win spawn cost
     train_loader = dl(sub(tr), not args.no_aug, True)
     val_loader = dl(sub(va), False, False)
     test_loader = dl(sub(te), False, False)
