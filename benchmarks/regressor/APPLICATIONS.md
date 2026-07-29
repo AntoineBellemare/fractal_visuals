@@ -66,6 +66,34 @@ Be honest about the ceiling; it differs a lot by method and by substrate.
 *scene* imagery and *spatially varying* targets is prototype-grade and is the current
 research frontier.
 
+### Controllability depends on the substrate class — measured
+
+The natural atlas (300 images, 60 families, 9 scale bands, ground-truth wavelet-leader
+measurement — `results/natural_atlas.csv`) gives the cleanest statement of the ceiling.
+Slope = measured change per unit of requested change; 1.0 would be perfect.
+
+| scale band | n | **c1 / FD** corr · slope | **c2 / multifractality** corr · slope |
+|---|---|---|---|
+| terrain (deltas, canyons, coasts) | 35 | **+0.90 · 0.69** | +0.48 · 0.36 |
+| atmosphere (cloud, smoke, fog) | 25 | **+0.89 · 0.66** | **+0.52 · 0.51** |
+| water / ice | 30 | **+0.88 · 0.67** | +0.38 · **0.48** |
+| rock | 35 | **+0.87 · 0.67** | +0.32 · 0.22 |
+| microbial | 30 | +0.86 · 0.50 | +0.19 · 0.21 |
+| tree / canopy | 30 | +0.75 · 0.49 | +0.41 · 0.23 |
+| plant | 50 | +0.72 · 0.52 | +0.19 · 0.15 |
+| sand / sediment | 30 | +0.63 · 0.40 | +0.20 · 0.11 |
+| microscopy | 35 | +0.61 · 0.49 | +0.11 · 0.19 |
+| **overall** | **300** | **+0.73 · 0.57** | +0.21 · 0.26 |
+
+Achieved FD spans **1.07 – 2.31**; achieved c2 spans **−1.33 – +0.01**.
+
+**Read this as the project's central empirical result.** FD (c1) is controllable across
+*every* natural scale from microscopy to landscape. Multifractality (c2) is controllable
+**only on substrates that are physically intermittent** — atmosphere, water/ice, terrain
+(sparse strong structure on smooth ground) — and essentially *not* on uniformly dense ones
+(microscopy, plant, sand, microbial). This is the "intricacy ≠ multifractality" finding
+appearing as a clean, predictable ordering over substrate classes, not as a model defect.
+
 ### Known structural limits
 - **Substrate feasibility.** Each texture domain reaches only part of the (c1,c2) plane —
   fire occupies a tiny region, clouds are locked at strong c2, fluids/ice/water sweep wide.
