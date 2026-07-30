@@ -37,7 +37,16 @@ sys.path.insert(0, str(ROOT / "benchmarks" / "diffusion"))
 import guided_sample as gs                        # noqa: E402
 import joint_montage as jm                        # noqa: E402
 from build_corpus import measure_c2               # noqa: E402
-import prompts_natural_scales as PN               # noqa: E402
+import prompts_natural_scales as PN               # noqa: E402  (default prompt module)
+
+
+def load_prompt_module(name):
+    """Any module exposing PROMPTS + a per-family band map works (natural scales, creatures...)."""
+    import importlib
+    m = importlib.import_module(name)
+    band_of = getattr(m, "SCALE_OF", None) or getattr(m, "BAND_OF", {})
+    bands = getattr(m, "SCALES", None) or getattr(m, "BANDS", sorted(set(band_of.values())))
+    return m, band_of, bands
 
 # (c1, c2) targets: 4 corners of the perceptual plane + centre
 TARGETS = {
@@ -56,7 +65,9 @@ def fd_of(c1):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--families", default=None, help="comma list; default = all")
-    ap.add_argument("--scales", default=None, help="comma list of scale bands to include")
+    ap.add_argument("--scales", default=None, help="comma list of scale/band names to include")
+    ap.add_argument("--prompts-module", default="prompts_natural_scales",
+                    help="any module with PROMPTS + SCALE_OF/BAND_OF (e.g. prompts_creatures)")
     ap.add_argument("--targets", default="full", choices=list(TARGETS))
     ap.add_argument("--seeds", type=int, default=1)
     ap.add_argument("--scale-guid", type=float, default=150.0, help="guidance strength")
@@ -69,10 +80,11 @@ def main():
     ap.add_argument("--out", default=str(HERE / "natural_atlas"))
     args = ap.parse_args()
 
-    fams = args.families.split(",") if args.families else list(PN.PROMPTS)
+    PM, BAND_OF, BANDS = load_prompt_module(args.prompts_module)
+    fams = args.families.split(",") if args.families else list(PM.PROMPTS)
     if args.scales:
         keep = set(args.scales.split(","))
-        fams = [f for f in fams if PN.SCALE_OF.get(f) in keep]
+        fams = [f for f in fams if BAND_OF.get(f) in keep]
     tgts = TARGETS[args.targets]
     out = Path(args.out); out.mkdir(parents=True, exist_ok=True)
     manifest = out / "atlas.csv"
@@ -100,8 +112,8 @@ def main():
     n_total = len(fams) * len(tgts) * args.seeds
     k = 0; t0 = time.time()
     for fam in fams:
-        scale = PN.SCALE_OF.get(fam, "other")
-        prompt = PN.PROMPTS[fam][0]
+        scale = BAND_OF.get(fam, "other")
+        prompt = PM.PROMPTS[fam][0]
         (out / "img" / scale).mkdir(parents=True, exist_ok=True)
         for (c1t, c2t) in tgts:
             for s in range(args.seeds):
@@ -128,7 +140,7 @@ def main():
                           f"FD {fd_of(c1m):.2f}  el={el:.0f}m eta={eta:.0f}m", flush=True)
                     _flush(manifest, rows)
     _flush(manifest, rows)
-    _sheets(out, rows, tgts)
+    _sheets(out, rows, tgts, BANDS)
     print(f"\nDONE {len(rows)} images -> {out}", flush=True)
 
 
@@ -143,7 +155,7 @@ def _flush(manifest, rows):
             w.writerow({k: r.get(k, "") for k in keys})
 
 
-def _sheets(out, rows, tgts):
+def _sheets(out, rows, tgts, bands=None):
     """Contact sheet per scale band: rows = family, cols = target."""
     import matplotlib; matplotlib.use("Agg")
     import matplotlib.pyplot as plt

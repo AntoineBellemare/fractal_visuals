@@ -84,3 +84,7 @@ benchmarks/regressor/cn_model/
 # train_scripts/ IS tracked: it carries two required patches (see PHASE_B.md)
 benchmarks/regressor/val_cond_*.png
 benchmarks/regressor/cn_eval/
+benchmarks/regressor/creature_atlas/
+benchmarks/regressor/spatial_out/
+benchmarks/regressor/d1_float/
+benchmarks/regressor/fade_test/
