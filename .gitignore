@@ -93,3 +93,5 @@ benchmarks/regressor/grad_tune/
 benchmarks/regressor/spatial_s*/
 benchmarks/regressor/fd_gallery/
 benchmarks/regressor/mf_gallery/
+benchmarks/regressor/fd_gallery_v2/
+benchmarks/regressor/fd_flip/

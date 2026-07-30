@@ -102,7 +102,11 @@ def measure_thirds(img, direction):
         A, B = a[:h // 3], a[2 * h // 3:]
     elif direction == "radial":
         A, B = a[3 * h // 8:5 * h // 8, 3 * w // 8:5 * w // 8], a[:h // 4, :w // 4]
-    else:                                   # h and d both ramp left->right
+    elif direction == "d":
+        # the ramp runs top-left -> bottom-right, so sample those CORNERS. Sampling
+        # left/right thirds (as before) only spans half the ramp and understated 'd' subjects.
+        A, B = a[:h // 2, :w // 2], a[h // 2:, w // 2:]
+    else:                                   # h ramps left -> right
         A, B = a[:, :w // 3], a[:, 2 * w // 3:]
     def m(x):
         s = np.asarray(Image.fromarray((x * 255).astype(np.uint8)).resize((512, 512)), float) / 255
