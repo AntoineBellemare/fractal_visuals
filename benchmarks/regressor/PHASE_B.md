@@ -250,3 +250,46 @@ structured field cannot beat 0.1 in 500 steps, the ControlNet route is not the a
 Guided generation runs at **11.1 s/image** at 1024. A 200-image stimulus set is **40–60 min** of
 GPU. **Compute has not been the bottleneck for weeks** — yield-within-tolerance and validation are.
 Budget nights of GPU less, and human/validation data more.
+
+---
+
+## 8. ROOT CAUSE FOUND — the "fade" is the 8-bit conditioning image, not diffusion
+
+Four measurements, in order:
+
+1. **Lowering img2img strength does not help.** Fade slope saturates: strength 0.20 -> 0.449,
+   0.30 -> 0.437, 0.40 -> 0.388, 0.50 -> 0.177 (r = 0.99 at low strength, i.e. highly systematic).
+2. **The SDXL VAE is not the bottleneck.** Pure encode->decode round trip on the conditioning
+   image preserves c2 with slope **+0.927** (r = 1.00).
+3. **The 8-bit conditioning image is the bottleneck.** A field synthesised at c2 = -0.80 measures
+   only **-0.356** once `scaffold_init` percentile-stretches it to uint8 — before diffusion sees it.
+   Encoding sweep (8-bit vs raw field): percentile 1/99 **+0.506**, log+sigmoid +0.468,
+   rank/hist-eq +0.349; while log-minmax / sqrt / linear preserve dynamic range but then
+   8-bit quantisation produces the sparse-field artifact (c2 -> -50). **There is no 8-bit encoding
+   that carries a synthetic heavy-tailed cascade faithfully** — spread it and you lose c2,
+   preserve it and quantisation destroys it.
+4. **img2img is therefore FAITHFUL to what it is given.** Achieved tracks the *8-bit field's own*
+   measured c2 roughly 1:1 (8-bit -0.23/-0.46/-0.86 -> achieved -0.284/-0.492/-0.740).
+
+### Consequence: calibration recovers most of the range for free
+
+Because the map is systematic, simply **over-drive the request**:
+
+| requested c2 | 8-bit field | achieved c2 |
+|---|---|---|
+| -0.5 | -0.23 | -0.284 |
+| -1.0 | -0.46 | -0.492 |
+| **-1.5** | **-0.86** | **-0.740** |
+| -2.0 | -1.75 | -0.595 (field starting to break) |
+| -3.0 | -7.44 | -3.23 (artifact) |
+
+Requesting ~2x the desired value reaches **c2 = -0.74** with NO training, versus the -0.45 we
+believed was the ceiling. Usable window ends near request -2.0, where the 8-bit encoding
+collapses into sparse-field artifacts. Rule of thumb: **request ~ 2 x target, valid to target ~ -0.8.**
+
+### What this means for the ControlNet
+The failed fine-tune was trained on conditioning that could only ever carry ~50% of the intended
+c2, on top of being flat/structureless. Any future ControlNet must avoid the 8-bit carrier:
+either feed the conditioning as a **float tensor** (the diffusers pipeline accepts torch.Tensor
+for `image=`, bypassing uint8 entirely) or use **real 8-bit exemplars** that natively possess the
+target statistics, rather than synthetic cascades that cannot survive quantisation.
