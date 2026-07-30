@@ -73,6 +73,24 @@ SUBJECTS = [
     ("lichen_rock",   "crustose lichen and mineral staining spreading across slate", "d"),
     ("dunes",         "rippled desert sand dunes from above, sinuous crests and shadows", "h"),
 ]
+
+# Substrates that are PHYSICALLY INTERMITTENT (sparse strong structure on smooth ground) --
+# the only ones where a c2 ramp is expressible at all. Everything else can only do FD ramps.
+INTERMITTENT = [
+    ("smoke",        "turbulent smoke plume, billowing eddies and thinning wisps", "h"),
+    ("smoke_backlit","backlit incense smoke, laminar threads breaking into vortices", "d"),
+    ("ink_water",    "black ink diffusing in water, turbulent tendrils and curls", "h"),
+    ("ferrofluid",   "ferrofluid spikes under a magnet, black peaks on a mirror surface", "radial"),
+    ("frost_fern",   "window frost ferns, dendritic ice crystals on cold glass", "h"),
+    ("lichen_slate", "crustose lichen and mineral staining spreading across slate", "d"),
+    ("cirrus_wisp",  "wispy cirrus clouds in a pale sky, fibrous ice streaks", "h"),
+    ("dendrite",     "manganese dendrites on limestone, black fern-like mineral growth", "radial"),
+    ("mycelium",     "white fungal mycelium threading through dark substrate", "h"),
+    ("dye_plume",    "dye dispersing in water, mushrooming vortices and fine filaments", "v"),
+    ("firestorm",    "swirling firestorm, embers and flame filaments against dark smoke", "d"),
+    ("cracked_glaze","crazed ceramic glaze, fine craquelure network over celadon", "h"),
+]
+
 TAIL = ", sharp focus, fine detail, natural light, photorealistic, high resolution, 8K"
 
 
@@ -109,11 +127,13 @@ def main():
                          "fd = ramp c1/fractal dimension (survives the 8-bit path, works broadly)")
     ap.add_argument("--c1-lo", type=float, default=0.8)
     ap.add_argument("--c1-hi", type=float, default=1.9)
+    ap.add_argument("--intermittent", action="store_true",
+                    help="use only substrates that can physically express a c2 ramp")
     ap.add_argument("--out", default=str(HERE / "gradient_gallery"))
     args = ap.parse_args()
     out = Path(args.out); (out / "img").mkdir(parents=True, exist_ok=True)
 
-    subs = SUBJECTS
+    subs = INTERMITTENT if args.intermittent else SUBJECTS
     if args.subjects:
         keep = set(args.subjects.split(","))
         subs = [s for s in SUBJECTS if s[0] in keep]
