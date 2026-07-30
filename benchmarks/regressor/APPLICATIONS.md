@@ -157,14 +157,33 @@ appearing as a clean, predictable ordering over substrate classes, not as a mode
 Specify a texture by *what it does perceptually* — "FD 2.4, mildly multifractal" — instead of
 guessing prompts. The procedural scaffold is exact and free; diffusion photorealises it.
 
-### 5.2 Things prompts fundamentally cannot do
-- **Complexity gradients inside a single image** — calm on one side, turbulent on the other,
-  as a continuous spatial field (working; strength to be improved by Phase B).
-- **Hidden multifractal shapes** — a letter or figure embedded as a *texture-statistics*
-  anomaly with **no luminance edge**, invisible to naive inspection but detectable
-  statistically. Both a novel steganography and ideal pareidolia bait.
-- **Statistically matched families** — an asset pack (marble, bark, rust, foam) that all share
-  one multifractal signature, so a game or brand system has coherent "visual busyness".
+### 5.2 Things prompts fundamentally cannot do — with HONEST status
+
+- **Statistically matched families** ✅ **works today.** An asset pack (marble, bark, rust, foam)
+  all sharing one multifractal signature, so a game or brand system has coherent "visual
+  busyness". Guide each family to the same (c1,c2), then *verify* with the regressor and keep
+  what lands in tolerance. Only limit is substrate feasibility (fire cannot reach strong c2).
+- **Complexity gradients inside a single image** ⚠️ **partial.** Visually convincing on abstract
+  textures, but on *scene* content only **~5 %** of the intended gradient transmits (measured,
+  82 images). Guidance cannot currently do gradients at all — it applies ONE global target to
+  the whole latent. See the spatial-guidance fix below.
+- **Hidden multifractal shapes** ❌ **not achieved.** Measured on the generated images:
+  shape-region vs background **|Δc2| = 0.039**, against a local-c2 noise floor of **~0.15** at a
+  256 px window — i.e. ~4x *below* detectability. The shapes are neither visible nor
+  statistically recoverable. (An earlier note in this repo claimed the luminance-matching "fixed"
+  this; that was based on the drawn overlay, not on measurement, and was wrong.)
+
+**The unifying limit.** Both shortfalls have one cause: **local cumulant estimation is
+noise-dominated below whole-image scale** (0–47 % signal across every window/grid tested). A
+texture statistic confined to a small region is hard to impose *and* hard to verify. So:
+**coarse spatial control is feasible; fine spatial control is not.**
+
+**The fix that stays off the 8-bit path — spatial guidance.** The regressor is convolutional
+with a global average pool. Replace that pool with **per-region pooling** (2×2 or 3×3 latent
+regions), give each region its own target, sum the losses; the gradient then steers regions
+differently. Regions must stay large (~quarter image) to clear the noise floor — which is
+exactly the regime a gradient needs. This keeps control on the gradient path, avoiding the
+8-bit conditioning cap that limits every conditioning-image method.
 
 ### 5.3 Time and motion
 - **Complexity as an animation axis**: sweep (c1,c2) across frames so a texture "breathes"
