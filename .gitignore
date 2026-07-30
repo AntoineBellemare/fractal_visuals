@@ -88,3 +88,6 @@ benchmarks/regressor/creature_atlas/
 benchmarks/regressor/spatial_out/
 benchmarks/regressor/d1_float/
 benchmarks/regressor/fade_test/
+benchmarks/regressor/gradient_gallery/
+benchmarks/regressor/grad_tune/
+benchmarks/regressor/spatial_s*/
