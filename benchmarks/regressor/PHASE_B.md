@@ -293,3 +293,46 @@ c2, on top of being flat/structureless. Any future ControlNet must avoid the 8-b
 either feed the conditioning as a **float tensor** (the diffusers pipeline accepts torch.Tensor
 for `image=`, bypassing uint8 entirely) or use **real 8-bit exemplars** that natively possess the
 target statistics, rather than synthetic cascades that cannot survive quantisation.
+
+---
+
+## 9. D1 (float conditioning) = NEGATIVE; D2 (real exemplars) = VIABLE
+
+**D1 — bypassing uint8 does not help; it is worse.** Passing the cascade field as a float
+`torch.Tensor` (no quantisation) at img2img strength 0.30:
+
+| encoding | slope vs field's raw c2 | achieved range |
+|---|---|---|
+| uint8 percentile | **+0.394** | -0.19 .. -0.58 (compressed but sane) |
+| float-linear | +20.8 | -0.17 .. **-29.4** (artifact) |
+| float-log | +10.1 | -18.8 (artifact) |
+
+So the loss is **not quantisation precision**. A heavy-tailed field whose mass sits near zero
+drives the output into the sparse-field regime regardless of carrier precision; the percentile
+stretch is what makes it usable at all, and ~50 % c2 loss is its unavoidable price.
+**Conclusion: synthetic-cascade conditioning is fundamentally capped.** Calibration
+(over-driving the request ~2x, section 8) is the ceiling of that route: c2 ~ -0.74.
+
+**D2 — real images as exemplars: viable, and well-covered.** Pool of REAL 8-bit sources
+(diffusion + macro + pareidolia): **2437 images, 302 content-disjoint groups**, spanning
+c1 0.54..2.43 and c2 -1.40..+0.19. 23 of 42 (c1 x c2) cells hold >= 10 exemplars.
+Nearest-exemplar match error for representative targets:
+
+| target (c1, c2) | mean abs dc1 | mean abs dc2 |
+|---|---|---|
+| (1.0, -0.30) | 0.071 | 0.080 |
+| (1.3, -0.60) | 0.052 | 0.041 |
+| (1.6, -0.90) | **0.018** | **0.014** |
+| (1.3, -0.90) | 0.128 | 0.088 |
+| (1.6, -0.25) | 0.028 | 0.029 |
+
+Real photographs natively carry strong c2 in an 8-bit-survivable form — exactly what synthetic
+cascades cannot do. This makes **exemplar conditioning** the viable ControlNet route.
+
+### Correction to the G3 gate (my error)
+I previously defined the "empty corner" as (c1 ~ 1.6, c2 ~ -0.90). **That is wrong** — that cell
+holds ~115 real exemplars. The genuinely empty region is **low c1 (0.8-1.1) combined with strong
+c2 (<= -0.65)**: 0 images out of 4467, i.e. *busy AND strongly clustered*. G3 must target that.
+Note this region is also the one with no exemplar available, so it is reachable neither by
+exemplar conditioning nor (per D1) by synthetic cascade — it may be genuinely unreachable, which
+is itself the publishable reachability result.
