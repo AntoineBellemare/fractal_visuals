@@ -163,10 +163,11 @@ guessing prompts. The procedural scaffold is exact and free; diffusion photoreal
   all sharing one multifractal signature, so a game or brand system has coherent "visual
   busyness". Guide each family to the same (c1,c2), then *verify* with the regressor and keep
   what lands in tolerance. Only limit is substrate feasibility (fire cannot reach strong c2).
-- **Complexity gradients inside a single image** ⚠️ **partial.** Visually convincing on abstract
-  textures, but on *scene* content only **~5 %** of the intended gradient transmits (measured,
-  82 images). Guidance cannot currently do gradients at all — it applies ONE global target to
-  the whole latent. See the spatial-guidance fix below.
+- **Complexity gradients inside a single image** ⚠️ **aesthetic only — not measured control.**
+  The scaffold/ControlNet route produces smooth, artifact-free images that *read* as complexity
+  gradients (see `gradient_pass/`), but only **~5 %** of the intended c2 ramp actually transmits
+  (82 images). **Spatial guidance was built and FAILED** — see below. So: usable for visuals,
+  not defensible as measured spatial control.
 - **Hidden multifractal shapes** ❌ **not achieved.** Measured on the generated images:
   shape-region vs background **|Δc2| = 0.039**, against a local-c2 noise floor of **~0.15** at a
   256 px window — i.e. ~4x *below* detectability. The shapes are neither visible nor
@@ -178,12 +179,22 @@ noise-dominated below whole-image scale** (0–47 % signal across every window/g
 texture statistic confined to a small region is hard to impose *and* hard to verify. So:
 **coarse spatial control is feasible; fine spatial control is not.**
 
-**The fix that stays off the 8-bit path — spatial guidance.** The regressor is convolutional
-with a global average pool. Replace that pool with **per-region pooling** (2×2 or 3×3 latent
-regions), give each region its own target, sum the losses; the gradient then steers regions
-differently. Regions must stay large (~quarter image) to clear the noise floor — which is
-exactly the regime a gradient needs. This keeps control on the gradient path, avoiding the
-8-bit conditioning cap that limits every conditioning-image method.
+**Spatial guidance was tried and does not work (measured).** Per-region pooling of the
+regressor with per-region targets: hard 2×2 blocks gave frost 88 % / forest 27 % / marble −14 %,
+but the 88 % was a **hard seam**, not control — disjoint blocks make the loss step between
+neighbouring targets, so the image splits into two halves with a visible cut plus yellow-grid and
+hallucinated-text artifacts. Smooth overlapping windows remove the seam but collapse transmission
+to **6 % / 3 % / −11 %**, and raising the gradient 12× only reaches 16 % (it saturates), while
+artifacts return.
+
+**Root cause — the regressor's features are not local enough.** Its body is four 3×3 stride-2
+blocks, so each cell of the 8×8 feature map has a receptive field of ~25 % of the image and a
+4×4 pooling window sees ~62 %. Neighbouring "regions" read almost the same global information:
+the only way to satisfy two different targets is a discontinuity, and smooth overlap washes the
+differentiation out entirely. This is the **same limit** as the local cumulant map — c2 cannot be
+localised below roughly half an image, by the estimator (noise floor) *or* the regressor
+(receptive field). Genuine spatial control needs a regressor **trained for locality**, not a
+global one repurposed by pooling.
 
 ### 5.3 Time and motion
 - **Complexity as an animation axis**: sweep (c1,c2) across frames so a texture "breathes"

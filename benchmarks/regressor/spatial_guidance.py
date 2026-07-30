@@ -1,24 +1,38 @@
 """
-spatial_guidance.py — SPATIALLY VARYING (c1,c2) control, on the gradient path.
+spatial_guidance.py — SPATIALLY VARYING (c1,c2) control.  *** RESULT: DOES NOT WORK ***
 
-Why this exists: every conditioning-IMAGE route (scaffold img2img, ControlNet) is capped by the
-8-bit conditioning bottleneck (a field at c2=-0.80 measures -0.356 once encoded; no encoding,
-float or uint8, avoids it). Classifier guidance escapes that cap because the control signal is a
-GRADIENT, not an image — but until now it applied ONE GLOBAL target to the whole latent.
+Kept as a documented negative result. Read this before trying spatial control again.
 
-Idea: the joint regressor is `head(GAP(body(z)))`. Keep body and head; replace the GLOBAL average
-pool with PER-REGION pooling. body(z) is (B,256,8,8) for a 1024 image, so a GxG split gives each
-region a (8/G)x(8/G) patch of the feature map. Apply the same head per region -> a GxG map of
-(c1,c2) predictions. Loss = sum over regions of ||pred_region - target_region||^2, so the gradient
-pushes different parts of the image toward different statistics.
+The idea: the joint regressor is head(GAP(body(z))). Replace the GLOBAL average pool with
+PER-REGION pooling, give each region its own target, and let the gradient steer regions
+differently — all on the gradient path, so it escapes the 8-bit conditioning cap.
 
-Region size matters: local cumulant estimation is noise-dominated below whole-image scale, so
-G=2 (each region = 512x512 px of a 1024 image = the canonical measurement resolution) is the
-reliable setting. G=4 is offered but is near the noise floor.
+WHAT ACTUALLY HAPPENED (measured, horizontal c2 ramp -0.15 -> -0.85):
+  * HARD 2x2 blocks, summed loss, scale 150:  frost 88%, forest 27%, marble -14%.
+    The 88% was NOT control — it was a SEAM. Disjoint blocks give the loss a step between
+    neighbouring targets, so the image is driven into two half-images with a hard vertical
+    cut, plus heavy artifacts (yellow grids, hallucinated text) because summing over 4
+    regions multiplied the gradient ~4x.
+  * SMOOTH overlapping windows (pool 4 / stride 2), mean loss: transmission collapses to
+    6% / 3% / -11%. Raising the scale 5x (600) -> 17%, 12x (1400) -> 16%: it SATURATES, so
+    this is not under-driving. Artifacts still appear at the higher scales.
 
-Usage:
-  python spatial_guidance.py --mode validate      # does per-region prediction track truth?
-  python spatial_guidance.py --mode gradient      # generate + measure a spatial c2 ramp
+ROOT CAUSE — the regressor's features are not spatially local enough. body() is four 3x3
+stride-2 blocks, so each cell of the 8x8 map has a receptive field of ~31 latent px (~25% of
+the image), and a 4x4 pooling window sees ~62% of it. Neighbouring "regions" therefore read
+almost the same global information: the only way the network can satisfy two different
+targets is a sharp discontinuity, and once the windows overlap smoothly the differentiation
+washes out entirely.
+
+This is the SAME limit found for the local cumulant map (0-47% signal below whole-image
+scale): c2 cannot be reliably localised below roughly half an image — by the estimator
+(noise floor) and by the regressor (receptive field). Spatial multifractal control needs a
+regressor trained for locality, not a globally-trained one repurposed by pooling.
+
+PRACTICAL NOTE: for *aesthetic* complexity gradients the scaffold/ControlNet route
+(benchmarks/regressor/gradient_pass/) gives smooth, artifact-free images that read as
+complexity gradients, even though its measured c2 transmission is only ~5%. Use that for
+visuals; do not claim measured spatial control from it.
 """
 from __future__ import annotations
 import argparse, csv, sys
@@ -39,7 +53,10 @@ from latent_regressor import SDXL_SCALING              # noqa: E402
 
 
 def region_predict(model, z, grid=2):
-    """(B,4,H,W) latent -> (B, grid, grid, 2) per-region (c1,c2), reusing the trained head."""
+    """HARD block pooling -> (B, grid, grid, 2). Kept for the validation mode only.
+
+    NOT suitable for guidance: disjoint blocks give the loss a STEP between neighbouring
+    targets, and the gradient then drives a visible seam at the block boundary."""
     f = model.body(z)                                   # (B,256,8,8) at 1024
     B, C, H, W = f.shape
     g = grid
@@ -51,9 +68,35 @@ def region_predict(model, z, grid=2):
     return out
 
 
-def spatial_guided(pipe, model, prompt, c1_map, c2_map, *, steps=40, cfg=6.0, scale=150.0,
-                   w1=1.0, w2=1.0, warmup=12, res=1024, seed=0, grid=2, device="cuda"):
-    """Generate with a per-region (c1,c2) target map (grid x grid)."""
+def region_predict_soft(model, z, pool=4, stride=2):
+    """OVERLAPPING soft pooling -> (B, n, n, 2) predictions + their centre coords in [0,1].
+
+    Adjacent windows share half their area, so the target varies CONTINUOUSLY across the
+    image instead of stepping at block edges. pool=4 on the 8x8 feature map keeps each
+    window at 512 px (the canonical measurement scale, above the estimator noise floor)
+    while stride=2 gives 3x3 overlapping windows.
+    """
+    f = model.body(z)                                    # (B,C,8,8)
+    B, C, H, W = f.shape
+    win = torch.nn.functional.avg_pool2d(f, kernel_size=pool, stride=stride)   # (B,C,n,n)
+    n = win.shape[-1]
+    flat = win.permute(0, 2, 3, 1).reshape(B * n * n, C)
+    out = model.head(flat).reshape(B, n, n, -1)
+    # centre of each window in normalised image coords
+    idx = (torch.arange(n, device=z.device) * stride + (pool - 1) / 2) / (H - 1)
+    return out, idx
+
+
+def spatial_guided(pipe, model, prompt, c1_fn, c2_fn, *, steps=40, cfg=6.0, scale=150.0,
+                   w1=1.0, w2=1.0, warmup=12, res=1024, seed=0, pool=4, stride=2,
+                   device="cuda"):
+    """Generate with a CONTINUOUS spatial target.
+
+    c1_fn / c2_fn take normalised coords (x, y in [0,1]) and return the desired value, so the
+    target is smooth by construction — no block edges. The loss is MEAN (not sum) over
+    overlapping windows, so the gradient magnitude matches the global-guidance case and
+    `scale` keeps its usual meaning (summing over regions was what over-drove the latent
+    into the yellow-grid / hallucinated-text regime)."""
     g_ = torch.Generator(device=device).manual_seed(int(seed))
     sched = pipe.scheduler; sched.set_timesteps(steps, device=device)
     abar = sched.alphas_cumprod.to(device)
@@ -66,8 +109,8 @@ def spatial_guided(pipe, model, prompt, c1_map, c2_map, *, steps=40, cfg=6.0, sc
     added = {"text_embeds": add_text, "time_ids": add_time}
     lat = torch.randn((1, pipe.unet.config.in_channels, res // 8, res // 8),
                       generator=g_, device=device, dtype=pe.dtype) * sched.init_noise_sigma
-    tgt = torch.tensor(np.stack([c1_map, c2_map], -1), dtype=torch.float32, device=device)[None]
     wts = torch.tensor([w1, w2], device=device)
+    tgt = None                      # built lazily once we know the window layout
 
     for i, t in enumerate(sched.timesteps):
         with torch.no_grad():
@@ -79,8 +122,11 @@ def spatial_guided(pipe, model, prompt, c1_map, c2_map, *, steps=40, cfg=6.0, sc
             at = abar[t].clamp(1e-6, 1)
             l = lat.detach().requires_grad_(True)
             x0 = (l - (1 - at).sqrt() * eps.detach()) / at.sqrt()
-            pred = region_predict(model, x0.float(), grid)          # (1,g,g,2)
-            loss = (wts * (pred - tgt) ** 2).sum()
+            pred, coord = region_predict_soft(model, x0.float(), pool, stride)   # (1,n,n,2)
+            if tgt is None:
+                cy, cx = torch.meshgrid(coord, coord, indexing="ij")
+                tgt = torch.stack([c1_fn(cx, cy), c2_fn(cx, cy)], -1)[None].float()
+            loss = (wts * (pred - tgt) ** 2).mean()        # MEAN: gradient magnitude ~ global case
             grad = torch.autograd.grad(loss, l)[0]
             lat = (lat - scale * grad).detach().to(pe.dtype)
     with torch.no_grad():
@@ -152,12 +198,13 @@ def do_gradient(args, device):
                          ("forest", "dense forest canopy seen from above, photorealistic"),
                          ("frost",  "frost fern crystals on cold glass, photorealistic")]:
         # horizontal c2 ramp: left calm, right turbulent; c1 held constant
-        c1_map = np.full((g, g), 1.3)
-        ramp = np.linspace(args.c2_lo, args.c2_hi, g)
-        c2_map = np.tile(ramp[None, :], (g, 1))
-        img = spatial_guided(pipe, model, prompt, c1_map, c2_map, scale=args.scale,
+        lo, hi = args.c2_lo, args.c2_hi
+        c1_fn = lambda x, y: torch.full_like(x, 1.3)
+        c2_fn = lambda x, y: lo + (hi - lo) * x          # smooth horizontal ramp
+        img = spatial_guided(pipe, model, prompt, c1_fn, c2_fn, scale=args.scale,
                              warmup=args.warmup, steps=args.steps, res=args.res,
-                             seed=args.seed, grid=g, device=device)
+                             seed=args.seed, pool=args.pool, stride=args.stride,
+                             device=device)
         img.save(out / f"spatial_{name}.png")
         meas = quad_measure(img, g)
         left = meas[:, 0, 1].mean(); right = meas[:, -1, 1].mean()
@@ -178,7 +225,9 @@ def do_gradient(args, device):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--mode", choices=["validate", "gradient"], default="validate")
-    ap.add_argument("--grid", type=int, default=2)
+    ap.add_argument("--grid", type=int, default=2, help="validate mode only")
+    ap.add_argument("--pool", type=int, default=4, help="window size on the 8x8 feature map")
+    ap.add_argument("--stride", type=int, default=2, help="window stride (overlap)")
     ap.add_argument("--n", type=int, default=40)
     ap.add_argument("--c2-lo", type=float, default=-0.15)
     ap.add_argument("--c2-hi", type=float, default=-0.85)
