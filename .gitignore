@@ -81,5 +81,5 @@ benchmarks/regressor/mf_controlnet/
 benchmarks/regressor/noise_aware_test/
 benchmarks/regressor/cn_dataset*/
 benchmarks/regressor/cn_model/
-benchmarks/regressor/train_scripts/
+# train_scripts/ IS tracked: it carries two required patches (see PHASE_B.md)
 benchmarks/regressor/val_cond_*.png

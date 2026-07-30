@@ -17,10 +17,24 @@ set -u
 cd "$(git -C "$(dirname "$0")" rev-parse --show-toplevel)" || exit 1
 export PYTHONIOENCODING=utf-8
 R=benchmarks/regressor
-STEPS="${1:-3000}"          # first run: 3000 (sanity). full run: 10000
-RES="${2:-1024}"            # drop to 768 if OOM
+# MEASURED on this 3090 (24GB), and both limits are real:
+#  * SPEED: 1024 res + grad-checkpointing = ~12 s per MICRO-step, so accum 4 => 48 s/step
+#    => 40 h for 3000 steps. Too slow.
+#  * MEMORY: at 768 the process alone held 23.9 GB (baseline with it killed: 0.35 GB) and
+#    spilled to host RAM under Windows WDDM -> GPU pinned at 100% with step progress
+#    FROZEN for 7 min. Resident cost is UNet(bf16) + ControlNet + fp32 grads + 8-bit Adam
+#    state, before activations; the memory-saving flags are not enough at 768.
+# So: 512 res (activations ~0.44x of 768), accum 2. ~6 s/step => 2000 steps ~ 3.5 h.
+# CAVEAT: trained at 512 but sampled at 1024. The conditioning maps are smooth/low-frequency
+# so the control pathway should transfer, but VERIFY at the gates; a higher-res continuation
+# needs >24GB or latent+embedding precaching.
+STEPS="${1:-2000}"
+RES="${2:-512}"
+ACCUM="${3:-2}"
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True   # reduce fragmentation
 
-accelerate launch --mixed_precision bf16 $R/train_scripts/train_controlnet_sdxl.py \
+accelerate launch --num_processes 1 --mixed_precision bf16 \
+  $R/train_scripts/train_controlnet_sdxl.py \
   --pretrained_model_name_or_path "SG161222/RealVisXL_V4.0" \
   --pretrained_vae_model_name_or_path "madebyollin/sdxl-vae-fp16-fix" \
   --controlnet_model_name_or_path "xinsir/controlnet-tile-sdxl-1.0" \
@@ -30,7 +44,7 @@ accelerate launch --mixed_precision bf16 $R/train_scripts/train_controlnet_sdxl.
   --resolution "$RES" \
   --learning_rate 1e-5 \
   --max_train_steps "$STEPS" \
-  --train_batch_size 1 --gradient_accumulation_steps 4 \
+  --train_batch_size 1 --gradient_accumulation_steps "$ACCUM" \
   --gradient_checkpointing --use_8bit_adam --set_grads_to_none \
   --mixed_precision bf16 \
   --checkpointing_steps 500 --validation_steps 500 \
