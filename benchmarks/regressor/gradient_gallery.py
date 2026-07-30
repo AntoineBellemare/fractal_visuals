@@ -31,7 +31,26 @@ sys.path.insert(0, str(HERE)); sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "benchmarks" / "diffusion"))
 import mfractal as mf                                              # noqa: E402
 from mf_controlnet import build_pipe, generate, field_to_control, DEFAULT_CN  # noqa: E402
-from mf_creative import gradient_field                             # noqa: E402
+from mf_creative import gradient_field, grad_mask, cascade                 # noqa: E402
+
+
+def fd_gradient_field(c1_lo, c1_hi, c2, direction, seed=0, n=1024):
+    """Spatial gradient in c1 (= FALLING fractal dimension) at fixed c2.
+
+    Why this is the better gradient: the 8-bit conditioning image preserves c1 with slope
+    +1.163 (r 0.997) but c2 with only +0.506 -- c1 is a SLOPE of log-leaders and so is
+    invariant to the affine rescaling the encoder applies, whereas c2 is a VARIANCE and the
+    percentile stretch flattens it. So an FD ramp survives the conditioning path that a
+    multifractality ramp cannot."""
+    import mfractal as _mf
+    import numpy as _np
+    lo = _np.asarray(_mf.prescribed_cascade(n=n, seed=seed, c1_target=c1_lo, c2_target=c2), float)
+    hi = _np.asarray(_mf.prescribed_cascade(n=n, seed=seed, c1_target=c1_hi, c2_target=c2), float)
+    m = grad_mask(direction)
+    if m.shape[0] != n:
+        from PIL import Image as _I
+        m = _np.asarray(_I.fromarray((m * 255).astype('uint8')).resize((n, n)), float) / 255.0
+    return lo * (1 - m) + hi * m
 
 # (label, prompt, gradient direction) — drawn from the families that rendered best
 SUBJECTS = [
@@ -69,7 +88,8 @@ def measure_thirds(img, direction):
         A, B = a[:, :w // 3], a[:, 2 * w // 3:]
     def m(x):
         s = np.asarray(Image.fromarray((x * 255).astype(np.uint8)).resize((512, 512)), float) / 255
-        return float(mf.wavelet_leaders_2d(s)["c2"])
+        r = mf.wavelet_leaders_2d(s)
+        return float(r["c1"]), float(r["c2"])
     return m(A), m(B)
 
 
@@ -84,6 +104,11 @@ def main():
     ap.add_argument("--c2-turb", type=float, default=-0.90)
     ap.add_argument("--res", type=int, default=1024)
     ap.add_argument("--subjects", default=None, help="comma list; default = all")
+    ap.add_argument("--mode", choices=["mf", "fd"], default="mf",
+                    help="mf = ramp c2 (only works on intermittent substrates); "
+                         "fd = ramp c1/fractal dimension (survives the 8-bit path, works broadly)")
+    ap.add_argument("--c1-lo", type=float, default=0.8)
+    ap.add_argument("--c1-hi", type=float, default=1.9)
     ap.add_argument("--out", default=str(HERE / "gradient_gallery"))
     args = ap.parse_args()
     out = Path(args.out); (out / "img").mkdir(parents=True, exist_ok=True)
@@ -100,16 +125,22 @@ def main():
     rows, tiles = [], []
     import time; t0 = time.time()
     for i, (name, prompt, direction) in enumerate(subs):
-        field = gradient_field(args.c1, args.c2_calm, args.c2_turb, direction, seed=i)
+        if args.mode == "fd":
+            field = fd_gradient_field(args.c1_lo, args.c1_hi, -0.45, direction, seed=i, n=args.res)
+        else:
+            field = gradient_field(args.c1, args.c2_calm, args.c2_turb, direction, seed=i)
         ctrl = field_to_control(field)
         img = generate(pipe, prompt + TAIL, ctrl, args.cn_scale,
                        guidance_end=args.guidance_end, steps=args.steps, cfg=args.cfg,
                        seed=i, res=args.res, device=device)
-        calm, turb = measure_thirds(img, direction)
+        (c1A, c2A), (c1B, c2B) = measure_thirds(img, direction)
+        calm, turb = (c1A, c1B) if args.mode == "fd" else (c2A, c2B)
         fp = out / "img" / f"{name}_{direction}.png"
         img.save(fp, optimize=True)
-        rows.append(dict(subject=name, direction=direction, c2_calm=round(calm, 3),
-                         c2_turbulent=round(turb, 3), delta=round(turb - calm, 3)))
+        rows.append(dict(subject=name, direction=direction, mode=args.mode,
+                         c1_A=round(c1A, 3), c1_B=round(c1B, 3),
+                         c2_A=round(c2A, 3), c2_B=round(c2B, 3),
+                         delta=round(turb - calm, 3)))
         tiles.append((name, direction, img, calm, turb))
         print(f"  [{i+1}/{len(subs)}] {name:13s} {direction:6s} calm {calm:+.2f} -> "
               f"turb {turb:+.2f}  ({(time.time()-t0)/60:.1f}m)", flush=True)
@@ -125,11 +156,16 @@ def main():
     ax = np.atleast_1d(ax).ravel()
     for a, (name, direction, img, calm, turb) in zip(ax, tiles):
         a.imshow(img.resize((420, 420))); a.set_xticks([]); a.set_yticks([])
-        a.set_title(f"{name}  ({direction})\nc2 {calm:+.2f} → {turb:+.2f}", fontsize=8, pad=3)
+        lab = "FD" if args.mode == "fd" else "c2"
+        v0, v1 = (3 - calm, 3 - turb) if args.mode == "fd" else (calm, turb)
+        a.set_title(f"{name}  ({direction})\n{lab} {v0:+.2f} → {v1:+.2f}", fontsize=8, pad=3)
     for a in ax[len(tiles):]:
         a.axis("off")
-    fig.suptitle("Complexity gradients — calm → turbulent across the frame "
-                 "(scaffold + tile ControlNet; aesthetic pass)", fontsize=13, y=0.998)
+    what = ("FRACTAL DIMENSION (c1) ramp — detailed → smooth" if args.mode == "fd"
+            else "MULTIFRACTALITY (c2) ramp — uniform → clustered")
+    fig.suptitle("Complexity gradients across the frame: " + what
+                 + "  (scaffold + tile ControlNet; values MEASURED per third)",
+                 fontsize=12, y=0.999)
     fig.tight_layout(rect=[0, 0, 1, 0.98])
     fig.savefig(out / "gallery_sheet.png", dpi=130, bbox_inches="tight")
     plt.close(fig)
