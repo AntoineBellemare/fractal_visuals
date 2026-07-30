@@ -192,7 +192,60 @@ cross-talk dC1/dT2 = −0.21, dC2/dT1 = −0.04.
 
 ---
 
-## 6. Reframe worth internalising
+## 6. RESULT — checkpoint-1000 FAILED: the ControlNet ignores the map
+
+Trained 1000 steps (batch 1 × accum 2 = 2000 samples ≈ ⅓ epoch, 512 res, warm-started from
+xinsir tile, lr 1e-5). Evaluated with the **true** estimator on 22 images, 2 substrates ×
+6 (c1,c2) targets × 2 conditioning scales:
+
+| substrate | achieved c1 across ALL targets | achieved c2 across ALL targets |
+|---|---|---|
+| forest | 1.28 – 1.35 | −0.06 – −0.12 |
+| marble | 1.28 – 1.40 | −0.14 – −0.23 |
+
+**Slopes: dC1/dT1 = +0.04, dC2/dT2 = +0.01** (guidance: +0.58 / +0.49). The output depends on
+the *prompt* and slightly on cn_scale, and **not at all on the requested statistics**. All four
+gates fail. The network learned to treat the conditioning as a no-op.
+
+### Diagnosis — and it points at my own design choice
+
+1. **Under-trained.** 2000 samples seen. Scoping estimated 3–6k *steps* for usable behaviour,
+   10k for solid; we ran 1000 steps. Necessary but probably not sufficient on its own.
+2. **The conditioning is nearly information-free.** A uniform map is a *flat colour field*.
+   For the CN to use it, it must learn a purely **global** colour→texture-statistic mapping,
+   which is not what the architecture is shaped for (it injects spatially-structured residuals),
+   and the 30 % mosaics were only ~600 samples.
+3. **The warm start actively fights us.** The tile CN's prior is "reproduce the structure of the
+   reference image". Given a flat reference there is no structure to reproduce, so the prior
+   contributes nothing and must be *un*learned.
+4. **Ironic root cause:** the zero-shot run partly worked on c1 (target 1.3 → achieved ~1.35)
+   precisely because `prescribed_cascade` conditioning carries the target statistics as **real
+   structure**. Replacing it with a flat exact-label map removed the only signal the CN could
+   actually exploit. I traded a *usable but imprecise* signal for an *exact but unusable* one.
+
+### Recommended next design (combines both, keeps exactness)
+
+Condition on the **`prescribed_cascade` field** (real structure, so the tile prior helps), but fix
+the pairing so the target genuinely has the field's statistics — not by measuring the target
+(flat map), and not by reusing faded img2img pairs:
+
+> generate targets with the **guidance** method (which already reaches slope ≈ 0.5–0.6),
+> **measure** each output, then synthesise the conditioning field at the **measured** (c1,c2).
+
+Conditioning is then structured *and* statistically exact, and the fade trap stays closed
+because the field is built from the achieved value, never the requested one. Cost: one
+generation pass over the corpus plus a real (≥6k-step) training run.
+
+Also change: **lr 5e-5–1e-4** (teaching new conditioning semantics, not nudging), and consider
+**from-scratch CN init** instead of the tile warm start if the structured conditioning still
+under-responds.
+
+### Cheap kill-criterion before spending another GPU day
+Take 200 structured-conditioning pairs, train 500 steps, and check `dC2/dT2 > 0.1`. If a
+structured field cannot beat 0.1 in 500 steps, the ControlNet route is not the answer and
+**classifier guidance (already at 0.49–0.58) remains the best available controller.**
+
+## 7. Reframe worth internalising
 
 Guided generation runs at **11.1 s/image** at 1024. A 200-image stimulus set is **40–60 min** of
 GPU. **Compute has not been the bottleneck for weeks** — yield-within-tolerance and validation are.
