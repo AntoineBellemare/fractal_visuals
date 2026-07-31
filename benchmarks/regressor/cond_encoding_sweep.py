@@ -622,6 +622,64 @@ def make_figure(e1_rows, e1_summ, e2_summ, names):
     print(f"figure -> {OUT / 'cond_encoding_summary.png'}")
 
 
+def make_null_figure(e2_rows):
+    """THE decisive figure: what each encoding reports on fields that contain NO c2 gradient."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    def series(con, enc, key="dc2_enc"):
+        s = [r for r in e2_rows if r["construction"] == con and r["enc"] == enc]
+        s.sort(key=lambda r: int(r["seed"]))
+        return np.array([float(r[key]) for r in s])
+
+    encs = sorted({r["enc"] for r in e2_rows})
+    keep = [e for e in encs if np.abs(series("current", e)).max() < 20
+            and np.abs(series("null_ampramp", e)).max() < 20]
+    rec = []
+    for e in keep:
+        cur, na, ns = series("current", e), series("null_ampramp", e), series("null_samec2", e)
+        d = cur - na                                    # paired artifact subtraction
+        t = d.mean() / (d.std(ddof=1) / np.sqrt(len(d)))
+        rec.append((e, cur.mean(), cur.std(ddof=1), na.mean(), ns.mean(), d.mean(), t))
+    rec.sort(key=lambda r: r[1])
+    nm = [r[0] for r in rec]
+    col = ["tab:red" if x == BASELINE else ("tab:green" if x.startswith("CTRL_") else "tab:blue")
+           for x in nm]
+
+    fig, ax = plt.subplots(1, 3, figsize=(20, 8))
+    a = ax[0]
+    a.barh(range(len(nm)), [r[1] for r in rec], xerr=[r[2] for r in rec], color=col,
+           error_kw=dict(lw=0.8))
+    a.axvline(0, c="k", lw=0.8)
+    a.set_title("(1) as-shipped gradient field\ntrue dc2 is NEGATIVE -> bars should point LEFT")
+    a.set_xlabel("dc2 reported (right third - left third)")
+
+    a = ax[1]
+    a.barh(range(len(nm)), [r[3] for r in rec], color=col)
+    a.barh(range(len(nm)), [r[4] for r in rec], color="0.6", height=0.4)
+    a.axvline(0, c="k", lw=0.8)
+    a.set_title("(2) NULL CONTROLS -- no c2 gradient exists\n"
+                "colour = amplitude ramp only;  grey = plain same-c2 blend\n"
+                "anything away from 0 is MANUFACTURED signal")
+    a.set_xlabel("dc2 reported on a field with zero true dc2")
+
+    a = ax[2]
+    a.barh(range(len(nm)), [r[5] for r in rec], color=col)
+    a.axvline(0, c="k", lw=0.8)
+    a.set_title("(3) artifact-corrected: (1) minus (2)\nthe c2 signal that is genuinely there")
+    a.set_xlabel("paired dc2(current) - dc2(null_ampramp)")
+
+    for a in ax:
+        a.set_yticks(range(len(nm)))
+        a.set_yticklabels(nm, fontsize=8)
+        a.invert_yaxis()
+    fig.suptitle("Why spatial c2 gradients read as noise: the amplitude-ramp confound", fontsize=14)
+    fig.tight_layout(rect=[0, 0, 1, 0.95])
+    fig.savefig(OUT / "null_controls.png", dpi=110)
+    print(f"figure -> {OUT / 'null_controls.png'}")
+
+
 # ---------------------------------------------------------------------------
 def main():
     p = argparse.ArgumentParser(description=__doc__,
@@ -643,7 +701,27 @@ def main():
     p.add_argument("--only", default="", help="comma-separated encoding subset")
     p.add_argument("--save-samples", action="store_true",
                    help="write one example conditioning image per encoding")
+    p.add_argument("--figures-only", action="store_true",
+                   help="rebuild the figures from the CSVs already in cond_encoding/")
     args = p.parse_args()
+
+    if args.figures_only:
+        def _num(d):
+            out = {}
+            for k, v in d.items():
+                try:
+                    out[k] = float(v)
+                except (TypeError, ValueError):
+                    out[k] = v
+            return out
+        e1s = [_num(r) for r in csv.DictReader(open(OUT / "e1_summary.csv"))]
+        for r in e1s:
+            r["float_ctrl"] = (r["float_ctrl"] == "True")
+        e2s = [_num(r) for r in csv.DictReader(open(OUT / "e2_summary.csv"))]
+        e2r = list(csv.DictReader(open(OUT / "e2_spatial_raw.csv")))
+        make_figure(None, e1s, e2s, [r["enc"] for r in e1s])
+        make_null_figure(e2r)
+        return
 
     OUT.mkdir(parents=True, exist_ok=True)
     names = [x for x in args.only.split(",") if x] or list(ENCODINGS)
@@ -652,7 +730,7 @@ def main():
     print(f"{len(names)} encodings -> {OUT}")
 
     t0 = time.time()
-    e1_rows = e1_summ = e2_summ = None
+    e1_rows = e1_summ = e2_summ = e2_rows = None
     if not args.skip_e1:
         print("E1 global transmission ...")
         e1_rows, e1_summ = run_e1(args, names)
@@ -662,7 +740,7 @@ def main():
                   f"{s['c1_slope']:>10.3f}{s['levels']:>9.1f}{100 * s['clip_frac']:>8.2f}")
     if not args.skip_e2:
         print("\nE2 spatial transmission ...")
-        _, e2_summ = run_e2(args, names)
+        e2_rows, e2_summ = run_e2(args, names)
         for con in CONSTRUCTIONS:
             sub = [s for s in e2_summ if s["construction"] == con]
             if not sub:
@@ -687,6 +765,8 @@ def main():
 
     if e1_summ or e2_summ:
         make_figure(e1_rows, e1_summ, e2_summ, names)
+    if e2_rows and any(r["construction"].startswith("null_") for r in e2_rows):
+        make_null_figure(e2_rows)
     print(f"\ntotal {time.time() - t0:.0f}s")
 
 
