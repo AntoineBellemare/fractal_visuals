@@ -99,7 +99,7 @@ of this pass — partially in space too** (27 % of a requested ramp, 9/10 substr
 Measurement is excellent; synthesis is excellent *once calibrated*. The frontier is closing the
 gap on spatial c2, which is now a matter of degree rather than a wall.
 
-### The synthesiser itself needed calibrating — and this invalidates some earlier "c2" results
+### 3.1 The synthesiser itself needed calibrating — and this confounds some earlier "c2" results
 
 `prescribed_cascade(c1_target, c2_target)` was treated throughout this project as delivering
 *exactly* those cumulants. It does not. Measured at `c1_target = 1.3`, n = 1024, mean of 5 seeds:
@@ -301,7 +301,34 @@ leaves the outer thirds nearly pure and delivers **−0.737 ± 0.198** — 92 % 
 essentially the hard-step ceiling (−0.768) — while staying C¹-continuous, so it produces no seam.
 
 And the 8-bit encoder, long blamed for this, **retains 87 % of a real field gradient** (−0.324 →
-−0.282, with *lower* variance). It was never the bottleneck.
+−0.282, with *lower* variance). It was never the first bottleneck.
+
+**"8-bit" was also the wrong name for the second one.** Decomposing the encoder
+(`cond_encoding_sweep.py`, `results/cond_encoding_spatial.csv`) separates its three steps:
+
+| encoder step | global c2 slope |
+|---|---|
+| none / pure affine min-max, no quantisation | **1.000** (c1 also 1.000, r 1.000) |
+| + 1/99 percentile **clip**, still float | 0.589 |
+| + 8-bit quantisation | 0.514 |
+
+So a **pure affine map provably preserves both cumulants exactly** — confirmed, not assumed — the
+**clip costs 0.411 and the bit depth only 0.075, a 5.5 : 1 ratio.** A true 16-bit encoding
+(`bitsplit16`, 0.299) reproduces its own float control (0.299) to three decimals: 65 536 levels buy
+*nothing* over 256. If this path is ever revisited, widen or remove the percentile clip; do not
+reach for more bits.
+
+Two further results worth recording, both negative:
+- **A log transform is catastrophic here** (c2 slope 55.9, 33 distinct grey levels), because
+  `prescribed_cascade` returns `_normalize01()` of a **signed** fBm-modulated field, not a positive
+  multiplicative measure — so `log()` is applied to the wrong object and blows up the lower tail.
+  For a symmetric heavy-tailed variable the right analogue is `asinh` or a rank transform.
+- **The measurement was cancelling, not blind.** On the old construction the true c2 signal is
+  −0.414 and the amplitude-ramp artifact is **+0.438**; they very nearly annihilate. That is why
+  the ramp read as "pure noise on all substrates" — an *absence* was inferred from a *cancellation*
+  (figure 59). Null controls: a same-c2 blend reads −0.005 ± 0.026, but an amplitude-ramp-only
+  field with zero true c2 gradient reads **+0.438 ± 0.135**, and every global encoding — including
+  no encoding at all — reports that spurious positive.
 
 **End-to-end, measured on the rendered image.** Each subject is rendered twice from one seed with
 the ramp forward and reversed, and the statistic is ½·[Δc2(fwd) − Δc2(rev)] — a difference of
