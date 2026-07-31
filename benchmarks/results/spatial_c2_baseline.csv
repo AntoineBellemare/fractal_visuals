@@ -1,0 +1,11 @@
+arm,subject,fwd_dc2,rev_dc2,field_dc2,effect_dc2,effect_dc1,requested,transmit_pct
+baseline,smoke,1.211,0.346,-0.24,0.432,-0.225,-0.8,-54.1
+baseline,ink_water,0.785,-0.301,-1.039,0.543,0.025,-0.8,-67.9
+baseline,ferrofluid,-0.083,-0.039,-1.053,-0.022,-0.599,-0.8,2.7
+baseline,frost_fern,-0.019,-0.365,-0.83,0.173,0.244,-0.8,-21.6
+baseline,dendrite,0.215,0.089,-1.07,0.063,0.036,-0.8,-7.9
+baseline,dye_plume,0.095,-0.097,-0.146,0.096,0.637,-0.8,-12.0
+baseline,firestorm,-0.018,0.006,-0.92,-0.012,-0.369,-0.8,1.5
+baseline,cracked_glaze,0.083,0.317,-0.831,-0.117,0.14,-0.8,14.6
+baseline,mycelium,0.033,-0.133,-0.831,0.083,-0.388,-0.8,-10.4
+baseline,cirrus_wisp,0.258,-0.163,-1.057,0.211,0.181,-0.8,-26.4

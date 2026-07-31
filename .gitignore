@@ -95,3 +95,9 @@ benchmarks/regressor/fd_gallery/
 benchmarks/regressor/mf_gallery/
 benchmarks/regressor/fd_gallery_v2/
 benchmarks/regressor/fd_flip/
+# Spatial-c2 run artifacts (images + per-run CSVs). The tracked outputs are
+# benchmarks/results/spatial_c2_*.csv and benchmarks/figures/58_spatial_c2.png.
+benchmarks/regressor/spatial_c2/
+benchmarks/regressor/c2_baseline/
+benchmarks/regressor/cond_encoding/
+benchmarks/regressor/*.log

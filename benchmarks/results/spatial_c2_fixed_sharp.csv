@@ -1,0 +1,11 @@
+arm,subject,fwd_dc2,rev_dc2,field_dc2,effect_dc2,effect_dc1,requested,transmit_pct
+fixed_sharp,smoke,0.535,-0.17,-0.946,0.352,-0.044,-0.8,-44.1
+fixed_sharp,ink_water,-0.428,0.693,-0.751,-0.561,0.045,-0.8,70.1
+fixed_sharp,ferrofluid,-0.83,0.65,-0.99,-0.74,0.164,-0.8,92.5
+fixed_sharp,frost_fern,0.014,0.018,-0.609,-0.002,-0.148,-0.8,0.2
+fixed_sharp,dendrite,0.006,0.252,-0.856,-0.123,-0.015,-0.8,15.4
+fixed_sharp,dye_plume,-0.291,0.552,-0.65,-0.422,0.031,-0.8,52.7
+fixed_sharp,firestorm,-0.335,0.346,-0.763,-0.341,0.14,-0.8,42.6
+fixed_sharp,cracked_glaze,0.018,0.208,-0.327,-0.095,-0.259,-0.8,11.8
+fixed_sharp,mycelium,-0.071,0.141,-0.817,-0.106,0.015,-0.8,13.3
+fixed_sharp,cirrus_wisp,-0.199,-0.021,-0.824,-0.089,-0.072,-0.8,11.1

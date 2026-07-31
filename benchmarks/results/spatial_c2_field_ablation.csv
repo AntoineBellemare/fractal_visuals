@@ -1,0 +1,5 @@
+construction,amp_match,calibrated,dc2,dc2_sd,dc1,dc1_sd,requested,transmit_pct
+baseline (repo),False,False,-0.0357,0.2552,0.23,0.0727,-0.8,4.5
+amp-match only,True,False,-0.2605,0.1218,0.2424,0.1045,-0.8,32.6
+calibrated only,False,True,0.1203,0.1894,0.2357,0.0493,-0.8,-15.0
+amp-match + calibrated,True,True,-0.3236,0.1131,0.0029,0.0513,-0.8,40.5

@@ -1,21 +1,28 @@
 """
 gradient_gallery.py — high-quality COMPLEXITY-GRADIENT imagery (aesthetic pass).
 
-Honest framing: this is the *visual* capability, not measured spatial control. The scaffold
-field is a smooth spatial blend between two prescribed cascades, fed to the zero-shot tile
-ControlNet. It yields smooth, artifact-free images that genuinely READ as calm->turbulent
-across the frame. Measured c2 transmission through this route is only ~5%, and spatial
-guidance (the route that could have given measured control) failed — see spatial_guidance.py.
-So: use these for visuals; do not claim measured spatial control from them.
+Two modes, two very different verdicts:
+
+  --mode fd  RAMP FRACTAL DIMENSION (c1).  MEASURED CONTROL, and the defaults below reproduce it.
+             18 substrates, mean |dc1| = 0.32; 10/18 >= 0.30, 12/18 >= 0.15
+             (results/fd_gradient_gallery.csv, figure 55).
+  --mode mf  RAMP MULTIFRACTALITY (c2).  DOES NOT WORK through this construction — the linear
+             blend of two cascades is dominated by the LOW-c2 field, because cascade amplitude
+             collapses as intermittency rises (sd 0.0121 at c2=-0.20 vs 0.0015 at c2=-0.90). So
+             the field handed to the ControlNet has no c2 gradient in it to begin with, and the
+             measured output is a coin flip. Use spatial_c2.py instead, which amplitude-matches
+             the endpoints and calibrates them to equal c1.
 
 Quality choices (vs the earlier gradient_pass):
-  * 40 steps instead of 30;
-  * cn_scale ~0.8 — strong enough to shape the frame, low enough to keep the subject photoreal
+  * 35 steps;
+  * cn_scale 0.9 — strong enough to shape the frame, low enough to keep the subject photoreal
     (>=1.2 starts overriding content; the earlier 1.3 run looked procedural);
-  * control_guidance_end 0.85 so the last steps re-photorealise texture;
+  * control_guidance_end 0.60 — 0.85 held control too long and washed the content out;
+  * c1 span 0.2 -> 1.5, because prescribed_cascade SATURATES above a request of ~1.5, so the
+    older 0.8 -> 1.9 span wasted its top half;
   * subjects chosen from the families that rendered best in the atlases (terrain, atmosphere,
     water/ice, creatures) rather than arbitrary scenes.
-Every image is still measured (calm vs turbulent third) and written to a CSV, so the gallery
+Every image is still measured (calm vs turbulent region) and written to a CSV, so the gallery
 never drifts into unverified claims.
 """
 from __future__ import annotations
@@ -117,7 +124,7 @@ def measure_thirds(img, direction):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--cn-scale", type=float, default=0.8)
+    ap.add_argument("--cn-scale", type=float, default=0.9)
     ap.add_argument("--guidance-end", type=float, default=0.60)   # 0.85 held control too long and washed out content
     ap.add_argument("--steps", type=int, default=35)
     ap.add_argument("--cfg", type=float, default=6.0)
@@ -129,8 +136,9 @@ def main():
     ap.add_argument("--mode", choices=["mf", "fd"], default="mf",
                     help="mf = ramp c2 (only works on intermittent substrates); "
                          "fd = ramp c1/fractal dimension (survives the 8-bit path, works broadly)")
-    ap.add_argument("--c1-lo", type=float, default=0.8)
-    ap.add_argument("--c1-hi", type=float, default=1.9)
+    # defaults reproduce results/fd_gradient_gallery.csv; 0.8/1.9 was the older, weaker span
+    ap.add_argument("--c1-lo", type=float, default=0.2)
+    ap.add_argument("--c1-hi", type=float, default=1.5)
     ap.add_argument("--intermittent", action="store_true",
                     help="use only substrates that can physically express a c2 ramp")
     ap.add_argument("--out", default=str(HERE / "gradient_gallery"))
