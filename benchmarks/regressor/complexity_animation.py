@@ -46,12 +46,29 @@ from mf_controlnet import build_pipe, generate, field_to_control, DEFAULT_CN  # 
 
 TAIL = ", sharp focus, fine detail, natural light, photorealistic, high resolution, 8K"
 
+# Weighted towards families with a WIDE achieved c1 span in FEASIBILITY.md — a narrow-span
+# substrate (moss: FD 2.21 -> 2.03) barely breathes no matter how hard the field is driven.
 SUBJECTS = {
-    "moss":   "a bed of dense moss and small ferns on a forest floor, top-down",
-    "ink":    "black ink diffusing in clear water, turbulent tendrils and curling filaments",
-    "coral":  "vibrant coral reef underwater, branching colonies",
-    "frost":  "window frost ferns, dendritic ice crystals on cold glass",
-    "canopy": "dense green forest canopy seen from above, packed crowns",
+    "ink":        "black ink diffusing in clear water, turbulent tendrils and curling filaments",
+    "ferrofluid": "ferrofluid spikes under a magnet, black iridescent peaks on a mirror surface",
+    "dye":        "vivid magenta and cyan dye dispersing in water, mushrooming vortices",
+    "smoke":      "a turbulent smoke plume, billowing eddies thinning into wisps",
+    "firestorm":  "swirling firestorm, glowing embers and flame filaments against dark smoke",
+    "frost":      "window frost ferns, dendritic ice crystals on cold blue glass",
+    "ice_sheet":  "cracked sea ice seen from above, fractured floes and open leads",
+    "snow":       "wind-sculpted snow surface, sastrugi ridges in low raking light",
+    "dunes":      "rippled desert sand dunes from above, sinuous crests and shadows",
+    "delta":      "aerial view of a branching river delta, distributary channels in sediment",
+    "mountains":  "aerial of a rugged mountain range, ridges and valleys in relief",
+    "canyon":     "aerial of a deep eroded canyon system, branching tributary gorges",
+    "marble":     "polished marble slab, veined and translucent",
+    "granite":    "weathered granite surface, feldspar crystals and mineral speckle",
+    "lichen":     "crustose lichen and mineral staining spreading across slate",
+    "moss":       "a bed of dense moss and small ferns on a forest floor, top-down",
+    "canopy":     "dense green forest canopy seen from above, packed crowns",
+    "coral":      "vibrant coral reef underwater, branching colonies",
+    "jellyfish":  "a translucent bioluminescent deep-sea creature with delicate tendrils",
+    "nebula":     "deep space nebula, filaments of ionised gas and dark dust lanes",
 }
 
 
@@ -61,13 +78,43 @@ def measure(a):
     return float(r["c1"]), float(r["c2"])
 
 
-def frame_fields(c1_lo, c1_hi, c2, frames, n, seed, cal):
+def _path_point(t0, t1, u):
+    return t0[0] + (t1[0] - t0[0]) * u, t0[1] + (t1[1] - t0[1]) * u
+
+
+def uniform_us(c1_lo, c1_hi, c2, frames, cal, probe_n=384, probe_k=24, seeds=3):
+    """Reparameterise the target path so MEASURED field c1 advances uniformly per frame.
+
+    Walking the path at constant speed does not give constant *perceptual* speed: the forward map
+    saturates, so a linear sweep crawls at one end and stalls at the other (both pilot substrates
+    turned over around frame 11). Here the path is probed, the achieved c1 measured along it, and
+    the frame positions resampled so equal frame steps mean equal c1 steps.
+
+    Reparameterising is safe where re-inverting is not: it stays on ONE monotone path, so the
+    field still morphs continuously instead of hopping between calibrator solutions.
+    """
+    t0 = cal.invert(c1_lo, c2); t1 = cal.invert(c1_hi, c2)
+    us = np.linspace(0, 1, probe_k)
+    got = []
+    for u in us:
+        a, b = _path_point(t0, t1, u)
+        v = [measure(np.asarray(mf.prescribed_cascade(n=probe_n, seed=s, c1_target=a,
+                                                      c2_target=b), float))[0]
+             for s in range(seeds)]
+        got.append(float(np.mean(v)))
+    got = np.maximum.accumulate(np.array(got))          # enforce monotonicity for inversion
+    want = np.linspace(got[0], got[-1], frames)
+    return np.interp(want, got, us), got
+
+
+def frame_fields(c1_lo, c1_hi, c2, frames, n, seed, cal, us=None):
     """Interpolate the CALIBRATED endpoint targets — inverting per frame makes the solver hop."""
     t0 = cal.invert(c1_lo, c2); t1 = cal.invert(c1_hi, c2)
+    if us is None:
+        us = np.linspace(0, 1, frames)
     out = []
-    for u in np.linspace(0, 1, frames):
-        a = t0[0] + (t1[0] - t0[0]) * u
-        b = t0[1] + (t1[1] - t0[1]) * u
+    for u in us:
+        a, b = _path_point(t0, t1, u)
         out.append(zstd(np.asarray(mf.prescribed_cascade(n=n, seed=int(seed),
                                                          c1_target=a, c2_target=b), float)))
     return out
@@ -88,6 +135,11 @@ def main():
     ap.add_argument("--cfg", type=float, default=6.0)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--no-control", action="store_true")
+    ap.add_argument("--no-uniform", action="store_true",
+                    help="walk the target path linearly; motion then crawls at one end and stalls "
+                         "at the other (step-size cv 0.63 vs 0.23 reparameterised)")
+    ap.add_argument("--gif-size", type=int, default=512)
+    ap.add_argument("--gif-colors", type=int, default=128)
     ap.add_argument("--out", default=str(HERE / "creative" / "anim"))
     args = ap.parse_args()
 
@@ -97,22 +149,30 @@ def main():
     print(f"loading ControlNet ({DEFAULT_CN})...", flush=True)
     pipe = build_pipe(DEFAULT_CN, device)
 
-    subs = [s for s in args.subjects.split(",") if s in SUBJECTS]
+    subs = ([s for s in args.subjects.split(",") if s in SUBJECTS]
+            if args.subjects != "all" else list(SUBJECTS))
     arms = [("coherent", True)] + ([] if args.no_control else [("control", False)])
     rows = []
     t0 = time.time(); k = 0
     n_tot = len(subs) * len(arms) * args.frames
 
-    for sub in subs:
+    us = None
+    if not args.no_uniform:
+        us, probe = uniform_us(args.c1_lo, args.c1_hi, args.c2, args.frames, cal)
+        print(f"uniform reparameterisation: field c1 {probe[0]:.2f} -> {probe[-1]:.2f} "
+              f"over {args.frames} frames", flush=True)
+
+    for si, sub in enumerate(subs):
         prompt = SUBJECTS[sub] + TAIL
+        # a per-subject cascade seed so the 20 clips are not all the same structure
         flds = frame_fields(args.c1_lo, args.c1_hi, args.c2, args.frames, args.res,
-                            args.seed, cal)
+                            args.seed + si, cal, us=us)
         for arm, fixed_seed in arms:
             (out / arm / sub).mkdir(parents=True, exist_ok=True)
             imgs = []
             for i, fld in enumerate(flds):
                 k += 1
-                dseed = args.seed if fixed_seed else 1000 + i     # control: reseed every frame
+                dseed = (args.seed + si) if fixed_seed else 1000 + i   # control: reseed each frame
                 img = generate(pipe, prompt, field_to_control(fld), args.cn_scale,
                                guidance_end=args.guidance_end, steps=args.steps,
                                cfg=args.cfg, seed=dseed, res=args.res, device=device)
@@ -134,7 +194,8 @@ def main():
             print(f"    {sub}/{arm}: mean frame-to-frame distance {np.mean(dif):.4f}", flush=True)
             # ping-pong GIF so it loops without a jump
             seq = imgs + imgs[-2:0:-1]
-            small = [im.resize((512, 512)) for im in seq]
+            small = [im.resize((args.gif_size, args.gif_size)).convert(
+                "P", palette=Image.ADAPTIVE, colors=args.gif_colors) for im in seq]
             small[0].save(out / f"{sub}_{arm}.gif", save_all=True, append_images=small[1:],
                           duration=110, loop=0, optimize=True)
             print(f"    -> {sub}_{arm}.gif", flush=True)

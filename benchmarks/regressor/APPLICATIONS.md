@@ -498,12 +498,34 @@ Coherence comes from holding **two** seeds fixed: the cascade seed, so the condi
 0.003 for a different cascade seed), and the diffusion seed. Against a matched control that
 reseeds every frame, the sequence is **2.6× smoother** (frame-to-frame distance 0.044 vs 0.114).
 
-Two practical notes. **Invert only the endpoints** and interpolate the targets between them —
-asking the calibrator for a different wanted-c1 each frame makes it hop between solutions and
-consecutive-field correlation collapses (0.345 at one step). And the sweep **saturates**: both
-substrates turn over around frame 11, so the usable range is the part where the field is still
-moving. It is not video-smooth — 0.044 mean frame distance is visible flicker — but it is a
-genuinely new parametric dimension for motion and live visuals.
+**Scaled to a 20-substrate gallery** (figures 68 and 69, `results/creative_breathing.csv`): 20
+subjects × 16 frames at 1024 px, spanning fluids, fire, ice, terrain, minerals, vegetation, marine
+and space. **All 20 track at r ≥ 0.91**, 14 of them at r ≥ 0.95 and 5 above 0.99.
+
+| | achieved FD span |
+|---|---|
+| widest | snow **0.69**, ice_sheet 0.50, jellyfish 0.50, dye 0.47, frost 0.45 |
+| narrowest | moss **0.17**, lichen 0.22, mountains 0.25 |
+
+The narrow ones are the familiar feasibility story — a substrate with a small reachable c1 range
+barely breathes however hard the field is driven — so the gallery is sorted by span and the flat
+ones are labelled rather than quietly included.
+
+Three practical notes, each learned the hard way:
+- **Invert only the endpoints** and interpolate the targets between them. Asking the calibrator for
+  a different wanted-c1 each frame makes it hop between solutions and consecutive-field correlation
+  collapses (0.345 at one step).
+- **Reparameterise the path** so equal frame steps mean equal *c1* steps. Walking the target path
+  linearly is not perceptually uniform: the forward map saturates, so motion crawls at one end and
+  stalls at the other. Probing the path and resampling drops the step-size cv from **0.63 to 0.23**,
+  and incidentally improved smoothness too (mean frame distance 0.044 → **0.031**). This is safe
+  where re-inverting is not, because it stays on one monotone path.
+- The last frame or two can still **overshoot and snap back** (ferrofluid f15 drops from c1 1.42 to
+  1.20) — trim the tail, or stop the sweep short of the saturated end.
+
+Honest limit: at ~0.03 mean frame distance it is not video-smooth, and it is a 16-frame breath
+rather than a continuous animation. But it is a genuinely new parametric dimension for motion and
+live visuals, and it is measured frame by frame rather than asserted.
 
 ### 5.4 Practical craft
 - **Viewing-distance-aware design**: FD predicts how detail reads at scale — useful for
