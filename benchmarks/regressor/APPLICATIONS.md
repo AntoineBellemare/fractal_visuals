@@ -245,6 +245,9 @@ guessing prompts. The procedural scaffold is exact and free; diffusion photoreal
   smoke, mammatus, canyon, coastline) stay flat — narrow intrinsic FD range, i.e. feasibility again.
 - **c2 (multifractality) gradients inside a single image** ✅ **partially — and the long-standing
   "impossible" verdict was wrong.** See §5.2.1.
+- **Shapes drawn in pure texture statistics** ✅ **works on the c1 axis** — but they are *visible*,
+  not hidden. See §5.2.3; this supersedes the flat "not achieved" below, which was measured on the
+  c2 axis only.
 - **Hidden multifractal shapes** ❌ **not achieved.** Measured on the generated images:
   shape-region vs background **|Δc2| = 0.039**, against a local-c2 noise floor of **~0.15** at a
   256 px window — i.e. ~4x *below* detectability. The shapes are neither visible nor
@@ -441,10 +444,66 @@ FD axis and must **not** be claimed on the multifractality axis. Check `FEASIBIL
 first. Note also that guidance pushed one medium (charcoal) into visible colour-grid artifacts —
 the known symptom of driving toward an infeasible corner.
 
+#### 5.2.3 Shapes drawn in pure texture statistics — and why they are still not *hidden*
+
+`hidden_shapes.py`, figure 65, `results/creative_texture_shapes.csv`.
+
+The repo recorded hidden shapes as **not achieved**: shape-vs-background |Δc2| = 0.039 against a
+~0.15 local noise floor, ~4× *below* detectability. Two things were wrong with that attempt, and
+both are now fixed: it used **c2**, the axis that barely transmits spatially, and the blend was the
+same unmatched construction that made spatial c2 look impossible (§5.2.1). Redone on the **c1**
+axis with amplitude-matched, calibrated endpoints and a softened mask edge:
+
+| | shape | flat-field null | test |
+|---|---|---|---|
+| Δc1 inside − outside | **+0.555** | −0.044 | t = +6.71, **p < 0.0001** |
+| recoverability r (local c1 map vs mask) | **+0.545** | −0.147 | t = +11.31, **p < 0.0001** |
+
+**d′ = 7.7** — where the earlier c2 attempt was 4× below its noise floor, this is ~7× above.
+Luminance is matched across the boundary to within 2 %, so the shape carries no brightness or
+colour cue: it is drawn *only* in fractal dimension, and it is **fully localisable** — the local c1
+map reproduces the mask (figure 65, middle row). Substrate-dependent as ever: lichen 12/12
+(r 0.79), moss 9/12, canopy and sand weak.
+
+**But it is NOT hidden, and a Δc1 sweep shows why it cannot be.** Holding the background fixed and
+sweeping the requested contrast:
+
+| requested Δc1 | 0.15 | 0.30 | 0.50 | 0.75 | **1.20** |
+|---|---|---|---|---|---|
+| measured Δc1 | −0.13 | −0.13 | −0.13 | −0.12 | **+1.05** |
+| recoverability above null | −0.04 | −0.06 | −0.11 | −0.08 | **+0.95** |
+
+It is a **threshold, not a fade**: below Δc1 ≈ 1.2 there is *nothing* — not a faint signal, no
+signal — and above it the effect is large *and* plainly visible (the local-gradient difference
+jumps by 4× at the same step). So recoverability and visibility switch on together. **There is no
+invisible-yet-detectable window**, and the original "hidden shape" ambition remains unmet. What
+exists instead is a real and more useful capability: **a shape rendered with no outline and no
+colour change, in texture alone.**
+
 ### 5.3 Time and motion
-- **Complexity as an animation axis**: sweep (c1,c2) across frames so a texture "breathes"
-  between calm and turbulent while the subject stays fixed — a genuinely new parametric
-  dimension for motion and live visuals.
+
+**Complexity as an axis of motion** ✅ **works** (`complexity_animation.py`, figure 66,
+GIF 67). Every animation axis a generative model offers is either semantic or photographic; none
+of them is "the same thing, more or less intricate". Sweeping c1 across frames gives exactly that
+— the subject, composition and lighting hold still while the texture breathes between smooth and
+busy. Measured over 16 frames:
+
+| substrate | tracking corr(field c1, image c1) | achieved FD span |
+|---|---|---|
+| ink in water | **+0.996** | 1.93 → 1.53 |
+| moss | +0.805 | 2.21 → 2.03 (narrow — substrate feasibility) |
+
+Coherence comes from holding **two** seeds fixed: the cascade seed, so the conditioning field
+*morphs* rather than being redrawn (consecutive fields correlate at r = 0.92–0.995, versus r =
+0.003 for a different cascade seed), and the diffusion seed. Against a matched control that
+reseeds every frame, the sequence is **2.6× smoother** (frame-to-frame distance 0.044 vs 0.114).
+
+Two practical notes. **Invert only the endpoints** and interpolate the targets between them —
+asking the calibrator for a different wanted-c1 each frame makes it hop between solutions and
+consecutive-field correlation collapses (0.345 at one step). And the sweep **saturates**: both
+substrates turn over around frame 11, so the usable range is the part where the field is still
+moving. It is not video-smooth — 0.044 mean frame distance is visible flicker — but it is a
+genuinely new parametric dimension for motion and live visuals.
 
 ### 5.4 Practical craft
 - **Viewing-distance-aware design**: FD predicts how detail reads at scale — useful for
@@ -466,7 +525,9 @@ the known symptom of driving toward an infeasible corner.
 | Controlled stimuli on a *flat/resistant* substrate | `mf_scaffold.py` |
 | A spatial **FD/complexity gradient** | `gradient_gallery.py --mode fd` (defaults now reproduce figure 55) |
 | A spatial **c2 / multifractality gradient** | `spatial_c2.py --mode gen` — 27 % transmission, 9/10 substrates; use `--mask smoothstep_mid` |
-| A hidden shape | nothing works — \|Δc2\| 0.039 against a ~0.15 noise floor |
+| A shape drawn in texture alone (no outline, no colour) | `hidden_shapes.py` — needs Δc1 ≥ ~1.2; visible, not hidden |
+| A genuinely *hidden* shape | still nothing — recoverability and visibility switch on together (§5.2.3) |
+| Complexity as an animation axis | `complexity_animation.py` — fix BOTH seeds, interpolate endpoint targets |
 | Look up whether a substrate can reach your target | `FEASIBILITY.md` / `results/feasibility_table.csv` |
 | A field that actually hits the (c1,c2) you asked for | `cascade_calibration.py` — **not** raw `prescribed_cascade` |
 | A broad labelled stimulus atlas | `natural_atlas.py` |
