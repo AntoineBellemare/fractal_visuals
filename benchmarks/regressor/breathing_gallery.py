@@ -26,11 +26,12 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 FIG = ROOT / "benchmarks" / "figures"
 SRC = HERE / "creative" / "breathing"
+TITLE = "COMPLEXITY BREATHING"
 BLUE, GREY = "#1f77b4", "#9e9e9e"
 
 
-def load():
-    d = pd.read_csv(SRC / "anim.csv")
+def load(src=None):
+    d = pd.read_csv((src or SRC) / "anim.csv")
     d = d[d.arm == "coherent"]
     agg = []
     for sub, g in d.groupby("subject"):
@@ -43,7 +44,8 @@ def load():
     return d, pd.DataFrame(agg).sort_values("span", ascending=False)
 
 
-def sheet(d, agg, ncols=6):
+def sheet(d, agg, ncols=6, src=None, out="68_breathing_gallery.png", title=None):
+    src = src or SRC
     subs = agg.subject.tolist()
     nr = len(subs)
     fig = plt.figure(figsize=(ncols * 2.15 + 3.4, nr * 2.32))
@@ -55,7 +57,7 @@ def sheet(d, agg, ncols=6):
         for j, ii in enumerate(idx):
             r = g.iloc[ii]
             ax = fig.add_subplot(gs[i, j]); ax.set_xticks([]); ax.set_yticks([])
-            fp = SRC / "coherent" / sub / f"f{int(r.frame):02d}.png"
+            fp = src / "coherent" / sub / f"f{int(r.frame):02d}.png"
             ax.imshow(Image.open(fp).resize((300, 300)))
             if i == 0:
                 ax.set_title(f"frame {int(r.frame)}", fontsize=9)
@@ -78,36 +80,39 @@ def sheet(d, agg, ncols=6):
                 bbox=dict(fc="white", ec="none", alpha=0.75, pad=1.5))
         if i == nr - 1:
             ax.set_xlabel("frame", fontsize=8)
-    fig.suptitle("COMPLEXITY BREATHING — 20 substrates, 16 frames each, 1024 px.  Fractal dimension "
-                 "sweeps from fine-grained (high FD) to coarse (low FD) while\nsubject, composition "
-                 "and lighting hold still.  Grey dashed = the conditioning field, blue = the "
-                 "MEASURED FD of the rendered frame.\nSorted by achieved span. The path is "
-                 "reparameterised so equal frame steps mean equal c1 steps (step-size cv 0.23 vs "
-                 "0.63 linear).\nAll 20 track at r ≥ 0.91.",
+    nf = d.groupby("subject").frame.nunique().max()
+    fig.suptitle(f"{title or 'COMPLEXITY BREATHING'} — {nr} substrates, {nf} frames each, 1024 px."
+                 "  Fractal dimension sweeps from fine-grained (high FD) to coarse (low FD)\nwhile "
+                 "subject, composition and lighting hold still.  Grey dashed = the conditioning "
+                 "field, blue = the MEASURED FD of the rendered frame.\nSorted by achieved span. "
+                 "The path is reparameterised so equal frame steps mean equal c1 steps (step-size "
+                 f"cv 0.23 vs 0.63 linear).\nAll {nr} track at r ≥ {agg.track.min():.2f}; "
+                 f"median achieved FD span {agg.span.median():.2f}.",
                  fontsize=13, y=0.997)
     fig.subplots_adjust(top=0.965)
-    fig.savefig(FIG / "68_breathing_gallery.png", dpi=110, bbox_inches="tight")
+    fig.savefig(FIG / out, dpi=110, bbox_inches="tight")
     plt.close(fig)
-    print("-> 68_breathing_gallery.png")
+    print(f"-> {out}")
 
 
-def montage(agg, k=9, cell=232, colors=128):
+def montage(agg, k=9, cell=232, colors=128, src=None, out="69_breathing_montage.gif"):
+    src = src or SRC
     """3x3 montage loop of the widest-span subjects — small enough to commit."""
     subs = agg.subject.tolist()[:k]
     side = int(np.sqrt(k))
-    frames = sorted((SRC / "coherent" / subs[0]).glob("f*.png"))
+    frames = sorted((src / "coherent" / subs[0]).glob("f*.png"))
     n = len(frames)
     seq = list(range(n)) + list(range(n - 2, 0, -1))
     ims = []
     for fi in seq:
         canvas = Image.new("RGB", (cell * side, cell * side))
         for i, sub in enumerate(subs):
-            fp = SRC / "coherent" / sub / f"f{fi:02d}.png"
+            fp = src / "coherent" / sub / f"f{fi:02d}.png"
             canvas.paste(Image.open(fp).resize((cell, cell)), ((i % side) * cell, (i // side) * cell))
         ims.append(canvas.convert("P", palette=Image.ADAPTIVE, colors=colors))
-    out = FIG / "69_breathing_montage.gif"
-    ims[0].save(out, save_all=True, append_images=ims[1:], duration=110, loop=0, optimize=True)
-    print(f"-> 69_breathing_montage.gif  ({out.stat().st_size // 1024} KB)  subjects: {', '.join(subs)}")
+    outp = FIG / out
+    ims[0].save(outp, save_all=True, append_images=ims[1:], duration=110, loop=0, optimize=True)
+    print(f"-> {out}  ({outp.stat().st_size // 1024} KB)  subjects: {', '.join(subs)}")
 
 
 if __name__ == "__main__":

@@ -71,6 +71,34 @@ SUBJECTS = {
     "nebula":     "deep space nebula, filaments of ionised gas and dark dust lanes",
 }
 
+# A second, deliberately SURREAL set. These are harder for the method than natural textures: the
+# scene has to hold together as an image while its texture statistics are swept, and dreamlike
+# content gives SDXL more licence to redraw rather than re-texture. Kept because if the axis only
+# worked on flat natural texture it would be a curiosity, not a compositional tool.
+SURREAL = {
+    "melting_clocks": "melting pocket watches draped over a bare desert branch, long shadows",
+    "floating_isles": "floating islands with waterfalls pouring into an empty sky",
+    "eye_storm":      "a vast human eye opening within a storm cloud above an ocean",
+    "bone_cathedral": "a cathedral grown from whale bone and coral, vaulted ribs and buttresses",
+    "moth_machine":   "a giant moth with clockwork wings, brass gears between the wing scales",
+    "root_city":      "a city whose towers are living tree roots, small windows glowing within",
+    "jelly_sky":      "translucent jellyfish drifting through a desert sky above dunes",
+    "mirror_desert":  "a desert of shattered mirrors reflecting a second sun",
+    "paper_ocean":    "an ocean of folded paper waves, origami spray and creased foam",
+    "myco_brain":     "a human brain made of glowing mycelium threads in dark soil",
+    "clock_forest":   "a forest where every leaf is a tiny tarnished pocket watch",
+    "stone_faces":    "weathered stone faces half-emerging from a cliff, unfinished",
+    "feather_storm":  "a storm of falling feathers inside a flooded marble ballroom",
+    "coral_ribs":     "a human ribcage overgrown with coral polyps and anemones underwater",
+    "ink_birds":      "a flock of birds dissolving into spilled ink at the wingtips",
+    "crystal_organs": "translucent crystal organs suspended in dark viscous fluid",
+    "sand_figures":   "human figures forming and dissolving out of blowing desert sand",
+    "lung_tree":      "a bare tree whose branches are bronchial airways, backlit in mist",
+    "egg_moon":       "a cracked eggshell moon leaking pale light over a still black lake",
+    "book_terraces":  "a landscape built from open books, their pages terraced like rice fields",
+}
+SETS = {"natural": SUBJECTS, "surreal": SURREAL}
+
 
 def measure(a):
     a = np.asarray(a, float); a = (a - a.min()) / (np.ptp(a) + 1e-12)
@@ -127,7 +155,9 @@ def main():
     ap.add_argument("--c1-lo", type=float, default=0.35)
     ap.add_argument("--c1-hi", type=float, default=1.45)
     ap.add_argument("--c2", type=float, default=-0.45)
-    ap.add_argument("--subjects", default="moss,ink")
+    ap.add_argument("--subjects", default="moss,ink", help="comma list, or 'all'")
+    ap.add_argument("--set", dest="subject_set", default="natural",
+                    choices=list(SETS), help="which subject dictionary to draw from")
     ap.add_argument("--res", type=int, default=1024)
     ap.add_argument("--cn-scale", type=float, default=0.9)
     ap.add_argument("--guidance-end", type=float, default=0.60)
@@ -149,8 +179,9 @@ def main():
     print(f"loading ControlNet ({DEFAULT_CN})...", flush=True)
     pipe = build_pipe(DEFAULT_CN, device)
 
-    subs = ([s for s in args.subjects.split(",") if s in SUBJECTS]
-            if args.subjects != "all" else list(SUBJECTS))
+    BANK = SETS[args.subject_set]
+    subs = ([s for s in args.subjects.split(",") if s in BANK]
+            if args.subjects != "all" else list(BANK))
     arms = [("coherent", True)] + ([] if args.no_control else [("control", False)])
     rows = []
     t0 = time.time(); k = 0
@@ -163,7 +194,7 @@ def main():
               f"over {args.frames} frames", flush=True)
 
     for si, sub in enumerate(subs):
-        prompt = SUBJECTS[sub] + TAIL
+        prompt = BANK[sub] + TAIL
         # a per-subject cascade seed so the 20 clips are not all the same structure
         flds = frame_fields(args.c1_lo, args.c1_hi, args.c2, args.frames, args.res,
                             args.seed + si, cal, us=us)

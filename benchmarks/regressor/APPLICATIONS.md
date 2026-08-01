@@ -527,6 +527,49 @@ Honest limit: at ~0.03 mean frame distance it is not video-smooth, and it is a 1
 rather than a continuous animation. But it is a genuinely new parametric dimension for motion and
 live visuals, and it is measured frame by frame rather than asserted.
 
+#### 5.3.1 The same axis on SURREAL content — and the tension it exposes
+
+A second 20-subject gallery (figures 71–72, `results/creative_breathing_surreal.csv`) runs the
+same sweep on deliberately dreamlike prompts: melting clocks, a bone cathedral, a clockwork moth,
+a brain of mycelium, a landscape built of open books. **All 20 track at r ≥ 0.74** (17/20 at
+≥ 0.88), with a median FD span of 0.37 — comparable to the natural set. `jelly_sky` reaches a span
+of **0.74**, the widest anywhere in the project.
+
+**But the surrealism largely does not survive**, and the reason is a real constraint rather than a
+prompt problem. The conditioning strength that buys FD control is the same strength that overwrites
+semantics. Measured directly (figure 73, three surreal subjects × three settings):
+
+| cn_scale | tracking r | achieved FD span | the scene |
+|---|---|---|---|
+| 0.40 | **−0.15** | 0.05 | intact and beautiful |
+| 0.65 | +0.92 | 0.22 | partially retained |
+| 0.90 | +0.93 | 0.48 | flattened toward texture |
+
+**Below ~0.6 the axis does not move at all** — span 0.05 and correlations that are negative as
+often as positive. At 0.90 it works fully, and the melting clocks become dunes and the eye in the
+storm becomes cloud. 0.65 recovers the axis at ~44 % of the span, but the rescue is **partial and
+subject-dependent**: the clockwork moth survives it, the melting clocks and the eye largely do not.
+
+The usable rule: **textural surrealism composes with this axis; scene-level surrealism fights it.**
+Prompts whose strangeness lives in the *material* — crystal organs, mycelium brain, bone cathedral,
+clockwork wings — breathe well, because the thing being restyled is texture. Prompts whose
+strangeness lives in the *arrangement of objects* need cn_scale low enough that the axis stops
+working. That is the same trade seen in §5.2.2 with the radial ramp imposing composition, and it is
+the honest ceiling of a conditioning-image route.
+
+#### 5.3.2 Apparitions — see §5.2.3 applied to surrealist ends
+
+`surreal_forms.py`, figure 70. Eye, crescent, keyhole, star and doorway rendered into bark, lichen,
+water, cloud and sand as regions of different fractal dimension: **d′ = 12.3**, recoverable in
+**18/20**, ground mattering far more than the form (lichen r 0.87, cloud 0.36). The eye and doorway
+in lichen read as organic growths that were never drawn.
+
+Two honest limits carry over and one is new. It is legible, not hidden (§5.2.3's Δc1 ≈ 1.2
+threshold). And although the *conditioning* is luminance-matched to ~0.5 %, **the renderer adds a
+brightness cue**: form regions come out ≈7 % darker than the ground (t = −8.20, p < 0.0001). So the
+output carries a modest luminance cue as well as a textural one — a pareidolia device with
+prescribed statistics, not an invisible one.
+
 ### 5.4 Practical craft
 - **Viewing-distance-aware design**: FD predicts how detail reads at scale — useful for
   murals, large-format print and projection.
