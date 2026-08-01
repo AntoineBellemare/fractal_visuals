@@ -368,6 +368,57 @@ localised below roughly half an image, by the estimator (noise floor) *or* the r
 (receptive field). Genuine spatial control needs a regressor **trained for locality**, not a
 global one repurposed by pooling.
 
+### 5.2.2 Two applications tested on non-texture content and across artistic media
+
+Everything above was measured on texture-like imagery in a photoreal style. Two creative
+applications were then pushed onto **figurative content** and **non-photoreal media** — oil
+impasto, sumi-e ink wash, copperplate engraving, watercolour, charcoal, linocut, woodblock, 3D
+render, electron micrograph. One unifying result came out of both:
+
+> **The artistic medium behaves as a substrate, with its own feasible region.** Media whose
+> mark-making is sparse and variable (ink wash, charcoal) carry complexity structure; media whose
+> mark-making is uniform by construction (engraving cross-hatch, linocut, oil impasto's canvas
+> weave) resist it — the same feasibility law that governs fire and cirrus, one level up.
+
+**A · Complexity as a compositional device** (`creative_detail_falloff.py`, figure 63). A *radial*
+FD ramp concentrates detail on the subject and simplifies the periphery. Unlike depth of field the
+edge stays sharp and in focus — it just becomes statistically simpler, which is a knob no prompt
+exposes. 4 subjects × 4 media, each rendered a second time with a flat field as a matched control:
+
+| medium | Δc1 ramp | Δc1 flat control |
+|---|---|---|
+| ink wash | **+0.251** (4/4) | −0.004 |
+| photo | +0.100 (3/4) | +0.030 |
+| engraving | +0.006 (2/4) | −0.101 |
+| oil impasto | −0.008 (2/4) | +0.036 |
+
+Paired across all 16 cells: mean **+0.097**, t = 1.40, **p = 0.18** (Wilcoxon 0.074), ramp > flat
+in 12/16. **Suggestive, not significant** at n = 16 — the effect is real in ink wash and absent in
+oil. The *visual* read is considerably stronger than the measurement, the same gap seen in the
+texture gallery.
+
+**Caveat that matters more than the statistic:** a radial conditioning field also imposes radial
+*composition*. The cathedral rendered as a dome, the dragon as a spiral. That is structure transfer,
+not a pure statistics manipulation — and where content leaks hardest it can invert the measurement
+(cathedral/photo, Δc1 −0.60). Treat this as an art-directable effect, not a clean experimental
+manipulation.
+
+**B · Statistically matched families** (`creative_matched_families.py`, figure 64). Ten media driven
+toward one (c1,c2) by joint guidance, each with an exact unguided control (same prompt, same seed,
+`scale = 0`). Replicated at two targets:
+
+| | c1 spread | c2 spread |
+|---|---|---|
+| target (1.30, −0.45) | 0.244 → 0.167 (**−31 %**) | 0.115 → 0.156 (**+36 %, worse**) |
+| target (1.60, −0.30) | 0.244 → 0.161 (**−34 %**) | 0.115 → 0.153 (**+33 %, worse**) |
+
+**c1 matching works across radically different media; c2 matching does not** — and the c2 spread
+reliably gets *worse*, at both targets. The reason is feasibility: guidance drags each medium
+toward the target by an amount set by how much c2 that medium can express, and since that varies
+enormously (charcoal smoke reaches −0.49; woodblock and linocut sit near −0.07), the set fans out
+rather than converging. So the **statistics-matched / content-varied** stimulus arm is sound on the
+FD axis and should not be claimed on the multifractality axis without per-medium feasibility checks.
+
 ### 5.3 Time and motion
 - **Complexity as an animation axis**: sweep (c1,c2) across frames so a texture "breathes"
   between calm and turbulent while the subject stays fixed — a genuinely new parametric
