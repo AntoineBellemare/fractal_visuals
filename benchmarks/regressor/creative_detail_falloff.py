@@ -67,6 +67,11 @@ def main():
     ap.add_argument("--res", type=int, default=1024)
     ap.add_argument("--control", action="store_true",
                     help="also render each cell with NO ramp (flat field) as a matched control")
+    ap.add_argument("--seeds", type=int, default=1, help="seeds per cell; n=16 was underpowered")
+    ap.add_argument("--seed-base", type=int, default=0)
+    ap.add_argument("--direction", default="radial", choices=["radial", "h", "v"],
+                    help="radial reads as composition but also imposes radial STRUCTURE; "
+                         "h/v is the cleaner manipulation for experimental use")
     ap.add_argument("--out", default=str(HERE / "creative" / "falloff"))
     args = ap.parse_args()
 
@@ -77,36 +82,38 @@ def main():
 
     rows = []
     t0 = time.time()
-    n_tot = len(SUBJECTS) * len(STYLES) * (2 if args.control else 1)
+    n_tot = len(SUBJECTS) * len(STYLES) * args.seeds * (2 if args.control else 1)
     k = 0
     for si, (sub, sprompt) in enumerate(SUBJECTS):
         for yi, (sty, styp) in enumerate(STYLES):
-            seed = si * 10 + yi
-            prompt = f"{sprompt}, {styp}"
-            variants = [("ramp", False)] + ([("flat", True)] if args.control else [])
-            for tag, flat in variants:
-                k += 1
-                if flat:                      # matched control: same c1 everywhere, no ramp
-                    fld = fd_gradient_field((args.c1_lo + args.c1_hi) / 2,
-                                            (args.c1_lo + args.c1_hi) / 2, -0.45,
-                                            "radial", seed=seed, n=args.res)
-                else:
-                    fld = fd_gradient_field(args.c1_lo, args.c1_hi, -0.45,
-                                            "radial", seed=seed, n=args.res)
-                img = generate(pipe, prompt, field_to_control(fld), args.cn_scale,
-                               guidance_end=args.guidance_end, steps=args.steps,
-                               cfg=args.cfg, seed=seed, res=args.res, device=device)
-                g = np.asarray(img.convert("L"), float) / 255.0
-                (c1C, c2C), (c1E, c2E) = measure_halves(g, "radial")   # A=centre, B=corner
-                img.save(out / "img" / f"{sub}_{sty}_{tag}.png", optimize=True)
-                rows.append(dict(subject=sub, style=sty, variant=tag, seed=seed,
-                                 c1_centre=round(c1C, 3), c1_edge=round(c1E, 3),
-                                 dc1=round(c1E - c1C, 3),
-                                 fd_centre=round(3 - c1C, 3), fd_edge=round(3 - c1E, 3),
-                                 c2_centre=round(c2C, 3), c2_edge=round(c2E, 3)))
-                print(f"  [{k}/{n_tot}] {sub:10s} {sty:10s} {tag:4s} "
-                      f"FD centre {3-c1C:.2f} -> edge {3-c1E:.2f}  (dc1 {c1E-c1C:+.2f})  "
-                      f"({(time.time()-t0)/60:.1f}m)", flush=True)
+            for si2 in range(args.seeds):
+                seed = args.seed_base + si2 * 1000 + si * 10 + yi
+                prompt = f"{sprompt}, {styp}"
+                variants = [("ramp", False)] + ([("flat", True)] if args.control else [])
+                for tag, flat in variants:
+                    k += 1
+                    if flat:                  # matched control: same c1 everywhere, no ramp
+                        fld = fd_gradient_field((args.c1_lo + args.c1_hi) / 2,
+                                                (args.c1_lo + args.c1_hi) / 2, -0.45,
+                                                args.direction, seed=seed, n=args.res)
+                    else:
+                        fld = fd_gradient_field(args.c1_lo, args.c1_hi, -0.45,
+                                                args.direction, seed=seed, n=args.res)
+                    img = generate(pipe, prompt, field_to_control(fld), args.cn_scale,
+                                   guidance_end=args.guidance_end, steps=args.steps,
+                                   cfg=args.cfg, seed=seed, res=args.res, device=device)
+                    g = np.asarray(img.convert("L"), float) / 255.0
+                    (c1C, c2C), (c1E, c2E) = measure_halves(g, args.direction)
+                    img.save(out / "img" / f"{sub}_{sty}_{tag}_s{seed}.png", optimize=True)
+                    rows.append(dict(subject=sub, style=sty, variant=tag, seed=seed,
+                                     direction=args.direction,
+                                     c1_centre=round(c1C, 3), c1_edge=round(c1E, 3),
+                                     dc1=round(c1E - c1C, 3),
+                                     fd_centre=round(3 - c1C, 3), fd_edge=round(3 - c1E, 3),
+                                     c2_centre=round(c2C, 3), c2_edge=round(c2E, 3)))
+                    print(f"  [{k}/{n_tot}] {sub:10s} {sty:10s} {tag:4s} s{seed:<5d} "
+                          f"FD centre {3-c1C:.2f} -> edge {3-c1E:.2f}  (dc1 {c1E-c1C:+.2f})  "
+                          f"({(time.time()-t0)/60:.1f}m)", flush=True)
 
     with (out / "falloff.csv").open("w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(rows[0].keys())); w.writeheader(); w.writerows(rows)

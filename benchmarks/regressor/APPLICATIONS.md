@@ -380,44 +380,66 @@ render, electron micrograph. One unifying result came out of both:
 > mark-making is uniform by construction (engraving cross-hatch, linocut, oil impasto's canvas
 > weave) resist it — the same feasibility law that governs fire and cirrus, one level up.
 
-**A · Complexity as a compositional device** (`creative_detail_falloff.py`, figure 63). A *radial*
-FD ramp concentrates detail on the subject and simplifies the periphery. Unlike depth of field the
-edge stays sharp and in focus — it just becomes statistically simpler, which is a knob no prompt
-exposes. 4 subjects × 4 media, each rendered a second time with a flat field as a matched control:
+Both were then **validated** on fresh seeds with proper inference. Two of the pilot's headline
+claims did not survive; the applications themselves did.
 
-| medium | Δc1 ramp | Δc1 flat control |
-|---|---|---|
-| ink wash | **+0.251** (4/4) | −0.004 |
-| photo | +0.100 (3/4) | +0.030 |
-| engraving | +0.006 (2/4) | −0.101 |
-| oil impasto | −0.008 (2/4) | +0.036 |
+**A · Complexity as a compositional device** ✅ **validated** (`creative_detail_falloff.py`,
+figure 63). An FD ramp concentrates detail on the subject and simplifies the rest. Unlike depth of
+field the simplified region stays **sharp and in focus** — it just becomes statistically simpler,
+which is a knob no prompt exposes. Every cell is rendered a second time with a **flat field** as a
+matched control, so the statistic is the ramp-minus-control difference, not the raw Δc1.
 
-Paired across all 16 cells: mean **+0.097**, t = 1.40, **p = 0.18** (Wilcoxon 0.074), ramp > flat
-in 12/16. **Suggestive, not significant** at n = 16 — the effect is real in ink wash and absent in
-oil. The *visual* read is considerably stronger than the measurement, the same gap seen in the
-texture gallery.
+| ramp geometry | n paired cells | effect | p |
+|---|---|---|---|
+| radial (pilot + replication) | 48 | **+0.106** | **0.016** (Wilcoxon 0.0014), 36/48 |
+| **horizontal** | 16 | **+0.183** | **0.014** (Wilcoxon 0.018) |
 
-**Caveat that matters more than the statistic:** a radial conditioning field also imposes radial
-*composition*. The cathedral rendered as a dome, the dragon as a spiral. That is structure transfer,
-not a pure statistics manipulation — and where content leaks hardest it can invert the measurement
-(cathedral/photo, Δc1 −0.60). Treat this as an art-directable effect, not a clean experimental
-manipulation.
+**Refinement — use a horizontal or vertical ramp, not radial.** A radial conditioning field also
+imposes radial *composition*: in the pilot the cathedral rendered as a dome and the dragon as a
+spiral, and where that content leakage was worst it inverted the measurement (cathedral/photo,
+Δc1 −0.60). The horizontal ramp has no such confound, and it is also the **stronger** effect
+(+0.183 vs +0.106) with a cleaner control (flat −0.004 vs +0.032). Radial remains the better
+*art-direction* tool; horizontal is the one to use when the statistic has to mean something.
 
-**B · Statistically matched families** (`creative_matched_families.py`, figure 64). Ten media driven
-toward one (c1,c2) by joint guidance, each with an exact unguided control (same prompt, same seed,
-`scale = 0`). Replicated at two targets:
+**Retracted from the pilot:** "ink wash carries the ramp (+0.251, 4/4), oil impasto and engraving
+do not" — that was n = 4 per medium and **did not replicate**. On fresh seeds photo led and ink was
+middling. Pooled at n = 12 per medium, ink (p = 0.03) and engraving (p = 0.05) clear significance
+while photo (p = 0.36) does not, despite a larger mean — so the per-medium ranking is not
+established. The one durable part is that **oil impasto is the consistent failure** (+0.024,
+p = 0.75): its canvas weave is uniformly textured everywhere, so there is no room for a
+complexity gradient. Medium-as-substrate survives as a direction, not as a ranking.
 
-| | c1 spread | c2 spread |
-|---|---|---|
-| target (1.30, −0.45) | 0.244 → 0.167 (**−31 %**) | 0.115 → 0.156 (**+36 %, worse**) |
-| target (1.60, −0.30) | 0.244 → 0.161 (**−34 %**) | 0.115 → 0.153 (**+33 %, worse**) |
+**B · Statistically matched families** — ✅ **validated on c1, ❌ refuted on c2**
+(`creative_matched_families.py`, figure 64). Ten media driven toward one (c1,c2) by joint guidance,
+each with an **exact unguided control** (same prompt, same seed, `scale = 0`), 4 seeds per family,
+n = 40 pairs. Because guided and unguided share prompt *and* seed, the powered test is the **paired
+per-family error**:
 
-**c1 matching works across radically different media; c2 matching does not** — and the c2 spread
-reliably gets *worse*, at both targets. The reason is feasibility: guidance drags each medium
-toward the target by an amount set by how much c2 that medium can express, and since that varies
-enormously (charcoal smoke reaches −0.49; woodblock and linocut sit near −0.07), the set fans out
-rather than converging. So the **statistics-matched / content-varied** stimulus arm is sound on the
-FD axis and should not be claimed on the multifractality axis without per-medium feasibility checks.
+| | unguided \|err\| | guided \|err\| | paired test |
+|---|---|---|---|
+| **c1** | 0.412 | **0.246** | t = −6.46, **p < 0.0001**, better in **32/40** |
+| **c2** | 0.154 | 0.162 | t = +0.66, **p = 0.51** — no effect |
+
+So guidance **roughly halves the c1 error across radically different media** and does **nothing at
+all** for c2. Adding rejection sampling (keep the seed closest to target, the workflow this doc
+prescribes) improves both arms a little — guided c1 RMSE 0.293 → 0.242 — but rejection sampling
+*alone*, without guidance, does not (0.456 → 0.373, n.s.). Guidance is doing the work.
+
+**Retracted from the pilot:** the "31 %/34 % spread reduction" figures. Spread across only 10
+families is hopelessly underpowered — bootstrap 95 % CIs on every spread ratio straddle 1
+(guidance alone c1: 0.66 [0.33, 1.45]). Those were point estimates quoted without inference. The
+paired-error test above is the claim that actually holds, and it is far stronger.
+
+**Why c2 fails** is feasibility, as elsewhere: the media differ enormously in how much
+intermittency they can express (charcoal smoke reaches −0.49; woodblock and linocut sit near
+−0.07), so guidance moves each by a different amount. The supporting correlation — between how
+negative a medium's c2 can go and how far it lands from target — is **+0.51, p = 0.13, n = 10**:
+consistent with the feasibility account but *not* on its own significant.
+
+**Practical consequence.** The **statistics-matched / content-varied** stimulus arm is sound on the
+FD axis and must **not** be claimed on the multifractality axis. Check `FEASIBILITY.md` per medium
+first. Note also that guidance pushed one medium (charcoal) into visible colour-grid artifacts —
+the known symptom of driving toward an infeasible corner.
 
 ### 5.3 Time and motion
 - **Complexity as an animation axis**: sweep (c1,c2) across frames so a texture "breathes"
