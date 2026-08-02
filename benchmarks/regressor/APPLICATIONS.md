@@ -550,6 +550,48 @@ often as positive. At 0.90 it works fully, and the melting clocks become dunes a
 storm becomes cloud. 0.65 recovers the axis at ~44 % of the span, but the rescue is **partial and
 subject-dependent**: the clockwork moth survives it, the melting clocks and the eye largely do not.
 
+#### 5.3.1a …and that tension turned out NOT to be structural
+
+The table above swept `cn_scale` at a **fixed `guidance_end = 0.60`**. Sweeping the two together
+(`cn_guidance_sweep.py`, figure 75, 3 subjects × 3 × 4 operating points, control measured as
+achieved FD span and semantics as DINOv2 similarity to an *unconditioned* render at the same
+prompt and seed) shows the two knobs are **separable**, and the old default was simply not on the
+Pareto front.
+
+FD span (control) — rises with both:
+
+| cn_scale ↓ / guidance_end → | 0.20 | 0.35 | 0.50 | 0.70 |
+|---|---|---|---|---|
+| 0.65 | 0.09 | 0.15 | 0.20 | 0.25 |
+| 0.90 | 0.15 | 0.27 | 0.40 | 0.53 |
+| 1.15 | 0.18 | 0.34 | 0.47 | **0.61** |
+
+Semantics kept — driven almost entirely by `guidance_end`, **not** by conditioning strength:
+
+| cn_scale ↓ / guidance_end → | 0.20 | 0.35 | 0.50 | 0.70 |
+|---|---|---|---|---|
+| 0.65 | 0.76 | 0.66 | 0.52 | 0.42 |
+| 0.90 | 0.75 | 0.59 | 0.57 | 0.38 |
+| 1.15 | 0.76 | 0.61 | **0.59** | 0.33 |
+
+Read the columns: at `guidance_end = 0.50`, pushing `cn_scale` from 0.65 → 1.15 more than doubles
+the span (0.20 → 0.47) while semantics *slightly improve* (0.52 → 0.59). **Conditioning strength
+buys control nearly for free; the semantic price is paid by holding the conditioning on for too
+long.** The earlier reading — "cn_scale destroys semantics" — was an artifact of comparing against
+`cn_scale = 0.40`, which is barely conditioning at all, so of course the scene survived.
+
+**Revised defaults, both of which dominate the old `cn 0.90 / ge 0.60`:**
+
+| use | cn_scale | guidance_end | span | semantics |
+|---|---|---|---|---|
+| texture / maximum control | 1.15 | 0.50 | 0.47 | 0.59 |
+| figurative or surreal content | 1.15 | 0.35 | 0.34 | 0.61 |
+
+Visually confirmed in figure 75: at cn 1.15 / ge 0.35 the melting clocks and the clockwork moth
+come *back*, where cn 0.90 / ge 0.70 leaves bare sand. The rule below still holds — scene-level
+surrealism is harder than textural surrealism — but the ceiling is considerably higher than the
+first sweep suggested, and it is an operating-point choice rather than a wall.
+
 The usable rule: **textural surrealism composes with this axis; scene-level surrealism fights it.**
 Prompts whose strangeness lives in the *material* — crystal organs, mycelium brain, bone cathedral,
 clockwork wings — breathe well, because the thing being restyled is texture. Prompts whose
