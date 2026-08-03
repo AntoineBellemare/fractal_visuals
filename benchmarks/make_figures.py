@@ -58,17 +58,10 @@ CURATED = {
 }
 CONTROLS = {"gneiss", "warped_fbm"}  # explicit monofractal anchors
 
-DROPPED = {
-    "plume": "estimator artifact on sparse bright structure (c2 ~ -8)",
-    "cellular_stone": "inverted rho (more cells = more uniform fragmentation)",
-    "concentric": "inverted rho (more rings = more uniform spacing)",
-    "breccia": "inverted rho (more fragments = more uniform tiling)",
-    "veined": "high-variance per seed, weak monotonicity",
-    "stratified": "pixel-identical to cascade_lognormal at matched seed (>0.95)",
-    "cloud_mrw": "pixel-identical to prescribed_cascade at matched seed (>0.95)",
-    "choppy": "pixel-identical to cascade_lognormal at matched seed (>0.95)",
-    "levy_marble": "pixel-identical to universal_cascade at matched seed (>0.99)",
-}
+# Retirement registry now lives in the package (mfractal/retired.py) so that every
+# consumer can query it — keeping a private copy here is what let build_pareidolia.py
+# drift onto three families that no longer exist.
+DROPPED = mf.DROPPED
 
 
 def takes_cx(family):

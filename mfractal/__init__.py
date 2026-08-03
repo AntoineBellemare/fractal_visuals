@@ -38,6 +38,8 @@ from .wavelet_cascade import prescribed_cascade, WAVELET_FAMILIES
 from .attractors import de_jong_attractor, ATTRACTOR_FAMILIES
 from .interference import wave_interference, INTERFERENCE_FAMILIES
 from .dataset import build_dataset, validate_dataset, generate
+from .retired import (RETIRED, DROPPED, RetiredFamilyError, is_retired,
+                      replacement_for, resolve_family, validate_families)
 from .quantify import wavelet_leaders_2d
 from .quantify import (mfdfa_2d, moments_2d, legendre, spectrum_summary,
                        box_count_support, local_fd_map, heterogeneity)

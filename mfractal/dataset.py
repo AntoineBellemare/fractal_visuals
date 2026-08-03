@@ -34,8 +34,15 @@ from .quantify import wavelet_leaders_2d, mfdfa_2d, spectrum_summary
 __all__ = ["build_dataset", "validate_dataset", "generate"]
 
 
-def generate(family, n=256, complexity=None, seed=None):
-    """Generate one raw [0,1] stimulus for any rock, cloud, fluid, or bark family."""
+def generate(family, n=256, complexity=None, seed=None, allow_retired=False):
+    """Generate one raw [0,1] stimulus for any rock, cloud, fluid, or bark family.
+
+    Retired families raise RetiredFamilyError naming their replacement, rather than falling
+    through to a bare AttributeError from getattr(textures, ...) — see mfractal/retired.py.
+    Pass allow_retired=True to transparently redirect an aliased name to its replacement.
+    """
+    from .retired import resolve_family
+    family = resolve_family(family, allow_retired=allow_retired)
     if family in FLUID_FAMILIES:
         if family in CX_FLUIDS:
             return getattr(fluids, family)(n, seed=seed,

@@ -42,12 +42,19 @@ import mfractal as mf
 CURATED = {
     "rock": ["marble", "agate", "weathered", "granite", "vesicular", "turbulent",
              "schist", "serpentinite", "flow_banded", "convoluted", "gneiss"],
-    "cloud": ["cascade_lognormal", "stratified", "billow", "cirrus",
-              "cloud_mrw", "cloud_multifractional", "warped_fbm", "ridged"],
-    "fluid": ["curl_weave", "choppy", "eddies", "vorticity",
+    "cloud": ["cascade_lognormal", "billow", "cirrus",
+              "cloud_multifractional", "warped_fbm", "ridged"],
+    "fluid": ["curl_weave", "eddies", "vorticity",
               "dye_diffusion", "rheoscopic"],
 }
 CONTROLS = {"gneiss", "warped_fbm"}
+
+# Fail fast and loudly if this list ever drifts onto a retired family again.
+# `stratified`, `cloud_mrw` and `choppy` sat here unnoticed after commit af17c50
+# pruned them, and 17 of the 106 shipped stimuli were built from names that no
+# longer generate. See mfractal/retired.py.
+for _dom, _fams in CURATED.items():
+    mf.validate_families(_fams)
 
 # c2 bins: monofractal-near-0 -> strong-multifractal.
 # Anything below -0.5 we put in the "extreme" bin; above 0 (rare) goes into the
