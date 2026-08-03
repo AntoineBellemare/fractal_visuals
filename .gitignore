@@ -101,3 +101,9 @@ benchmarks/regressor/spatial_c2/
 benchmarks/regressor/c2_baseline/
 benchmarks/regressor/cond_encoding/
 benchmarks/regressor/*.log
+
+# Rock stimulus set: PNGs are exactly reproducible from manifest.csv
+# (family + complexity + seed + --normalise), so we track the manifests, the measured
+# pool and the montage, not 57 MB of regenerable pixels.
+datasets/pareidolia_rock/images/
+datasets/pareidolia_rock/twins/

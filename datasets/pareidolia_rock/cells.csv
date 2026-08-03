@@ -1,0 +1,13 @@
+c1_level,c2_level,n_candidates,n_taken,n_families,families
+1.276,-0.176,114,8,3,"agate,convoluted,serpentinite"
+1.276,-0.109,140,8,4,"convoluted,schist,serpentinite,turbulent"
+1.276,-0.042,192,8,3,"gneiss,granite,schist"
+1.276,0.024,46,8,4,"gneiss,granite,turbulent,vesicular"
+1.426,-0.176,81,8,3,"agate,convoluted,weathered"
+1.426,-0.109,107,8,3,"agate,flow_banded,serpentinite"
+1.426,-0.042,164,8,4,"flow_banded,schist,serpentinite,vesicular"
+1.426,0.024,91,8,4,"granite,schist,turbulent,vesicular"
+1.576,-0.176,60,8,3,"agate,marble,weathered"
+1.576,-0.109,85,8,3,"agate,flow_banded,weathered"
+1.576,-0.042,109,8,3,"flow_banded,gneiss,serpentinite"
+1.576,0.024,45,8,4,"gneiss,granite,schist,serpentinite"

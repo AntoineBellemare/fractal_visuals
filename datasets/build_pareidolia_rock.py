@@ -157,53 +157,76 @@ def build_pool(seeds, n, cx_grid, mode="affine", verbose=True):
     return rows
 
 
-def auto_levels(pool, aniso_cap, n_c1=3, n_c2=4, min_fams=3, per_cell=8):
-    """Choose the grid FROM THE NORMALISED POOL.
+def auto_levels(pool, aniso_cap, c1_span, c2_span, n_c1=3, n_c2=4,
+                min_fams=3, per_cell=8):
+    """Place a grid of the REQUESTED spans so that contrast is as balanced as possible.
 
-    The reachability map was built on raw fields, but rank matching is a pointwise monotone map
-    and moves the cumulants — so levels taken from raw coordinates land in near-empty cells here
-    (measured: 5 of 12 cells with <=1 candidate). The grid has to be derived in the same
-    coordinate system the stimuli are actually delivered in.
+    The spans are an input, not something to maximise, because these quantities trade against
+    each other and the tradeoff has to be chosen rather than discovered. Measured frontier on
+    this pool (min cell / min families / RMS spread across cells):
 
-    Searches equally-spaced c1 and c2 ladders and maximises the worst cell, subject to every cell
-    having at least `min_fams` distinct families so that family cannot be confounded with cell.
+        c1 0.20 x c2 0.10 -> 13 / 3 / 0.0004      c1 0.30 x c2 0.20 -> 38 / 4 / 0.0182
+        c1 0.40 x c2 0.15 -> 30 / 3 / 0.0104      c1 0.40 x c2 0.30 -> 14 / 3 / 0.0789
+        c1 0.50 x c2 0.20 -> infeasible
+
+    Widening c2 costs contrast balance fast: an earlier build that maximised total span reached
+    c1 span 0.72 but drove corr(c1, RMS) to +0.677 and squeezed c2 to 0.079. Given c2 is the
+    scarce axis and the scientifically contested one, the default trades c1 span for c2 span.
+
+    Within the requested spans this minimises the spread of median RMS across cells, subject to
+    every cell having `per_cell` candidates and `min_fams` distinct families.
     """
     ok = [r for r in pool if r["aniso"] <= aniso_cap]
     c1s = np.array([r["c1"] for r in ok]); c2s = np.array([r["c2"] for r in ok])
     best = None
-    for c1lo in np.arange(np.percentile(c1s, 5), np.percentile(c1s, 45), 0.05):
-        for span1 in np.arange(0.20, 0.85, 0.05):
-            L1 = list(np.round(np.linspace(c1lo, c1lo + span1, n_c1), 3))
-            for c2lo in np.arange(np.percentile(c2s, 5), np.percentile(c2s, 55), 0.02):
-                for span2 in np.arange(0.10, 0.55, 0.02):
-                    L2 = list(np.round(np.linspace(c2lo, c2lo + span2, n_c2), 3))
-                    worst, worst_f = 1e9, 1e9
-                    for a in L1:
-                        for b in L2:
-                            c = [r for r in ok if abs(r["c1"] - a) <= TOL_C1
-                                 and abs(r["c2"] - b) <= TOL_C2]
-                            worst = min(worst, len(c))
-                            worst_f = min(worst_f, len({r["family"] for r in c}))
-                            if worst < per_cell or worst_f < min_fams:
-                                break
-                        if worst < per_cell or worst_f < min_fams:
-                            break
-                    if worst >= per_cell and worst_f >= min_fams:
-                        score = (worst_f, worst, span1 + span2)
-                        if best is None or score > best[0]:
-                            best = (score, L1, L2)
+    for c1lo in np.arange(np.percentile(c1s, 3), np.percentile(c1s, 70), 0.05):
+        L1 = list(np.round(np.linspace(c1lo, c1lo + c1_span, n_c1), 3))
+        for c2lo in np.arange(np.percentile(c2s, 3), -0.04, 0.02):
+            L2 = list(np.round(np.linspace(c2lo, c2lo + c2_span, n_c2), 3))
+            cells = []
+            for a in L1:
+                for b in L2:
+                    c = [r for r in ok if abs(r["c1"] - a) <= TOL_C1
+                         and abs(r["c2"] - b) <= TOL_C2]
+                    cells.append((len(c), len({r["family"] for r in c}),
+                                  float(np.median([r["rms"] for r in c])) if c else np.nan))
+            if min(x[0] for x in cells) < per_cell or min(x[1] for x in cells) < min_fams:
+                continue
+            rms = [x[2] for x in cells]
+            spread = max(rms) - min(rms)
+            score = (-spread, min(x[1] for x in cells), min(x[0] for x in cells))
+            if best is None or score > best[0]:
+                best = (score, L1, L2)
     return best
 
 
-def select(pool, per_cell, max_per_family, aniso_cap):
-    """Rejection-sample each cell: nearest to the cell centre, capped per family."""
+def select(pool, per_cell, max_per_family, aniso_cap, rms_target=None, rms_w=1.0,
+           aniso_target=None):
+    """Rejection-sample each cell: nearest to the cell centre, capped per family.
+
+    `rms_target` additionally pulls every cell toward a COMMON contrast. RMS cannot be equated
+    by normalisation without destroying the c2 manipulation (see the module docstring), but it
+    can be BALANCED by selection: among candidates that already satisfy the cumulant tolerances,
+    prefer those whose RMS sits near the global median. Without it the first build had RMS rising
+    monotonically across cells, 0.141 -> 0.159, i.e. contrast tracked both factors.
+    """
     chosen, report = [], []
     for c1t in C1_LEVELS:
         for c2t in C2_LEVELS:
             cand = [r for r in pool
                     if abs(r["c1"] - c1t) <= TOL_C1 and abs(r["c2"] - c2t) <= TOL_C2
                     and r["aniso"] <= aniso_cap]
-            cand.sort(key=lambda r: ((r["c1"] - c1t) / TOL_C1) ** 2 + ((r["c2"] - c2t) / TOL_C2) ** 2)
+            def cost(r):
+                c = ((r["c1"] - c1t) / TOL_C1) ** 2 + ((r["c2"] - c2t) / TOL_C2) ** 2
+                # Balance BOTH nuisances toward a common target. Capping anisotropy is not
+                # enough: with only a cap, corr(c1, aniso) came out at -0.594, because the
+                # families that populate high c1 happen to be the more isotropic ones.
+                if rms_target is not None:
+                    c += rms_w * ((r["rms"] - rms_target) / (0.25 * rms_target)) ** 2
+                if aniso_target is not None:
+                    c += rms_w * ((r["aniso"] - aniso_target) / (0.5 * aniso_target)) ** 2
+                return c
+            cand.sort(key=cost)
             taken, per_fam = [], {}
             for r in cand:
                 if per_fam.get(r["family"], 0) >= max_per_family:
@@ -233,6 +256,14 @@ def main():
                     help="see the module docstring: 'rank' equalises the marginal exactly but "
                          "compresses the c2 IQR 6x; 'affine' keeps ~half the range but leaves "
                          "corr(c2, RMS) = +0.80. Neither is clean — use phase-scrambled twins.")
+    ap.add_argument("--c1-span", type=float, default=0.30)
+    ap.add_argument("--c2-span", type=float, default=0.20)
+    ap.add_argument("--min-families", type=int, default=3)
+    ap.add_argument("--pool-csv", default=None,
+                    help="reuse a previously measured pool instead of regenerating (25 min)")
+    ap.add_argument("--no-rms-balance", action="store_true",
+                    help="disable contrast balancing across cells (it cannot be normalised away)")
+    ap.add_argument("--rms-weight", type=float, default=1.0)
     ap.add_argument("--auto-levels", action="store_true",
                     help="derive the grid from the NORMALISED pool instead of the raw reach map")
     ap.add_argument("--out", default=str(ROOT / "datasets" / "pareidolia_rock"))
@@ -243,22 +274,35 @@ def main():
     cx_grid = list(np.round(np.linspace(0.0, 1.0, 9), 3))
     print(f"pool: {len(ROCK)} families x {len(cx_grid)} complexities x {args.pool_seeds} seeds "
           f"at n={args.pool_n}", flush=True)
-    pool = build_pool(args.pool_seeds, args.pool_n, cx_grid, mode=args.normalise)
+    if args.pool_csv and Path(args.pool_csv).exists():
+        import pandas as _pd
+        pool = _pd.read_csv(args.pool_csv).to_dict("records")
+        print(f"  reusing pool: {len(pool)} fields from {args.pool_csv}", flush=True)
+    else:
+        pool = build_pool(args.pool_seeds, args.pool_n, cx_grid, mode=args.normalise)
     print(f"  {len(pool)} usable fields", flush=True)
     with (out / "pool.csv").open("w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(pool[0].keys())); w.writeheader(); w.writerows(pool)
 
     global C1_LEVELS, C2_LEVELS
     if args.auto_levels:
-        got = auto_levels(pool, args.aniso_cap, per_cell=args.per_cell)
+        got = auto_levels(pool, args.aniso_cap, args.c1_span, args.c2_span,
+                          per_cell=args.per_cell, min_fams=args.min_families)
         if got is None:
             print("  no grid satisfies the per-cell and family floors; relax --per-cell")
             return
-        (fams, worst, _), C1_LEVELS, C2_LEVELS = got
+        (negspread, minfam, mincell), C1_LEVELS, C2_LEVELS = got
         print(f"  auto levels: c1 {C1_LEVELS}  c2 {C2_LEVELS}  "
-              f"(worst cell {worst} candidates, {fams} families)", flush=True)
+              f"(worst cell {mincell} candidates, {minfam} families, "
+              f"RMS spread {-negspread:.4f})", flush=True)
 
-    chosen, report = select(pool, args.per_cell, args.max_per_family, args.aniso_cap)
+    _ok = [r for r in pool if r["aniso"] <= args.aniso_cap]
+    rms_med = float(np.median([r["rms"] for r in _ok]))
+    ani_med = float(np.median([r["aniso"] for r in _ok]))
+    chosen, report = select(pool, args.per_cell, args.max_per_family, args.aniso_cap,
+                            rms_target=(None if args.no_rms_balance else rms_med),
+                            rms_w=args.rms_weight,
+                            aniso_target=(None if args.no_rms_balance else ani_med))
     print(f"\n{'c1':>5}{'c2':>7}{'cand':>7}{'taken':>7}{'fams':>6}  families")
     for r in report:
         print(f"{r['c1_level']:5.2f}{r['c2_level']:7.2f}{r['n_candidates']:7d}"
