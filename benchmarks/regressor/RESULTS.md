@@ -59,7 +59,7 @@ feature-caching idea (extract once → train head in seconds). Their `c2_regress
 2. Stage 4: restrict each prompt to its **feasible c2 range** (e.g. marble for the full
    span; don't ask granite for −0.8) → aggregate slope/r will jump.
 3. More diverse **macro photos** (only 3 texture types → held-out-texture is unreliable).
-4. Branch `regressor-gpu` is committed but **not pushed** — push when you're ready.
+4. The `regressor-gpu` branch was merged into `main` on 2026-11-22.
 
 ## Intricate-prompt expansion + the intricacy≠c2 finding (2026-06-22)
 Added `benchmarks/diffusion/prompts_intricate.py` (19 pareidolia substrates) + `--prompts-module`

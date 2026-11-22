@@ -1,14 +1,14 @@
 # fractal_visuals
 
-A procedural **(multi)fractal image generation + measurement** toolbox for
-pareidolia research — generate 2D natural-surface stimuli across six domains
-(rock, cloud, fluid, bark, fire, metal) whose intermittency / multifractality
-can be controlled and independently quantified, then build c2-balanced
-experimental datasets.
+A toolbox for generating and measuring **(multi)fractal natural textures** for
+pareidolia research. It covers procedural generators in six domains (rock,
+cloud, fluid, bark, fire, metal), SDXL generation guided toward a requested
+fractal dimension (c1) and intermittency (c2), and the experimental stimulus
+sets built from both.
 
-The historical scripts and notebooks from the earlier monofractal-1/f line of
-work live under [`legacy/`](legacy/). The current toolbox lives in
-[`mfractal/`](mfractal/).
+The earlier monofractal (1/f) work, including the 300 FD stimuli of the online
+pareidolia study (`legacy/images/FD12`, `FD14`, `FD16`), lives under
+[`legacy/`](legacy/). The current toolbox lives in [`mfractal/`](mfractal/).
 
 ---
 
@@ -19,10 +19,16 @@ mfractal/                     procedural generators + multifractal estimators
 benchmarks/run_validation.py  sweep all families x complexity x seed, measure c2 / Delta_alpha
 benchmarks/make_figures.py    catalogs, c2-vs-complexity panels, cross-family scatter, ranks
 benchmarks/pymultifracs_check.py  independent c2 cross-check via pymultifracs
-benchmarks/results/           validation_manifest.csv + pymultifracs_check.csv
-benchmarks/figures/           the eight benchmark PNGs
+benchmarks/results/           per-experiment CSVs (validation, guidance, atlases, gradients)
+benchmarks/figures/           benchmark and results figures
+benchmarks/diffusion/         SDXL texture sweep + c2 report
+benchmarks/regressor/         c1/c2 regressors, guided SDXL, MF-ControlNet experiments, result docs
+benchmarks/percept_embedding/ embed a percept into a texture at fixed (c1, c2)
 datasets/build_pareidolia.py  candidate pool -> c2 binning -> balanced selection
 datasets/pareidolia/          the experimental stimulus set (PNG + manifest.csv + montage.png)
+datasets/reach_map.py         where c1 and c2 can be crossed, per domain
+datasets/build_pareidolia_rock.py, make_twins.py   crossed c1 x c2 rock set + phase-scrambled twins
+datasets/pareidolia_rock/     manifest of the crossed set (images regenerate, gitignored)
 legacy/                       previous notebooks, FD-binned image archive, old-dev scripts
 ```
 
@@ -160,6 +166,31 @@ take complexity and 3 are NS sims.
 Stim filenames encode the domain (`r`/`c`/`f`) + a serial index + family, e.g.
 `r042_granite.png`. Bind to the manifest to recover all metadata.
 
+17 of the 106 stimuli come from families retired after the set was built
+(stratified, cloud_mrw, choppy). `mf.generate(..., allow_retired=True)`
+redirects those names to their replacements, and
+[`mfractal/retired.py`](mfractal/retired.py) records every retirement.
+
+### Crossed c1 × c2 rock set
+
+[`datasets/pareidolia_rock/`](datasets/pareidolia_rock/) holds the manifest of
+96 stimuli, 3 c1 levels × 4 c2 levels × 8 per cell, each cell drawn from 3–4
+rock families. Rock is the one domain where c1 and c2 vary independently
+(corr +0.26, against −0.84 in cloud and −0.94 in fluid, measured over 2656
+fields by [`datasets/reach_map.py`](datasets/reach_map.py)).
+
+| factor | levels | between-level range / within-cell sd |
+|---|---|---|
+| c1 | 1.276 · 1.426 · 1.576 | 7.7 |
+| c2 | −0.176 · −0.109 · −0.042 · +0.024 | 9.4 |
+
+Every stimulus has an IAAFT phase-scrambled twin with the same histogram and
+power spectrum. Twins keep 98% of the c1 manipulation and 7% of the c2
+manipulation, so an effect present in stimuli and absent in twins isolates
+higher-order multifractal structure. RMS contrast correlates with both factors
+(0.44 with c1, 0.52 with c2). The manifest records RMS, mean, spectral β and
+anisotropy per stimulus for use as covariates.
+
 ---
 
 ## Reproducing
@@ -176,36 +207,51 @@ python benchmarks/pymultifracs_check.py
 
 # 4. Pareidolia dataset (~7-8 min)
 python datasets/build_pareidolia.py
+
+# 5. Crossed rock set + phase-scrambled twins (options in the module docstring)
+python datasets/build_pareidolia_rock.py --auto-levels --per-cell 8
+python datasets/make_twins.py --set datasets/pareidolia_rock
 ```
 
-All four scripts re-run cleanly from a fresh clone - outputs end up under
+Steps 1–4 re-run cleanly from a fresh clone - outputs end up under
 `benchmarks/results/`, `benchmarks/figures/`, and `datasets/pareidolia/`.
+The diffusion and regressor stages need a CUDA GPU and are documented in
+[`benchmarks/diffusion/README.md`](benchmarks/diffusion/README.md) and
+[`benchmarks/regressor/README.md`](benchmarks/regressor/README.md).
 
 ---
 
-## Roadmap: diffusion-generated natural textures + MF-ControlNet
+## Diffusion control of c1 and c2
 
-The procedural side gives us pixel-perfect control over generative parameters
-(seed, complexity, family) but the textures live in their own visual register
-- they read as procedural, not as photographs. The next phase brings in
-photorealistic counterparts:
+Asking SDXL for a family name gives weak control of c2. Across 32 families the
+procedural c2 predicts the diffusion c2 at Spearman ρ = 0.14
+([`benchmarks/diffusion/`](benchmarks/diffusion/), 320 RealVisXL images). The
+work in [`benchmarks/regressor/`](benchmarks/regressor/) therefore conditions
+generation on the cumulants directly.
 
-1. **Diffusion sweep.** Generate 5 prompt variations x ~10 images per family
-   using a photorealism-tuned SDXL or FLUX pipeline. Measure c1 / c2 on each
-   output via the same `wavelet_leaders_2d` estimator. Code lives in
-   [`benchmarks/diffusion/`](benchmarks/diffusion/) and runs on a single
-   16 GB GPU.
-2. **Multifractal dataset of natural images.** The labeled per-image c2 from
-   step 1 yields a c2-balanced natural-image dataset analogous to the
-   procedural one in `datasets/pareidolia/`.
-3. **MF-ControlNet.** Train a ControlNet whose conditioning signal is a local
-   multifractal descriptor (e.g. local FD map / heterogeneity from
-   `mfractal.quantify.local_fd_map`) so the diffusion model becomes
-   controllable on multifractality directly. The end product is a generator
-   that produces photorealistic natural textures at a chosen target c2.
+| approach | status | result |
+|---|---|---|
+| Classifier guidance with a latent (c1, c2) regressor | main controller | regressor RMSE 0.068 on held-out diffusion c2. Control slopes 0.58 (c1) and 0.49 (c2), ground-truth estimator, n = 63 |
+| Zero-shot tile ControlNet fed a `prescribed_cascade` field | works for spatial FD gradients and creative uses | 27% of a requested spatial c2 gradient transmits after the conditioning-field fix |
+| Fine-tuned MF-ControlNet (Phase B) | negative result | ignored its conditioning maps after 1000 steps (c2 slope 0.01). A redesign with real-exemplar conditioning is specified in PHASE_B.md |
 
-The diffusion sweep is the first checkpoint and is what
-[`benchmarks/diffusion/`](benchmarks/diffusion/) currently implements.
+On photographs and generated images c1 tracks box-counting fractal dimension
+(r ≈ −0.9), so controlling c1 controls FD. c2 control depends on the
+substrate. It is feasible on 27 of 95 tested substrates and strongest where
+sparse structure sits on smooth ground (smoke, frost, ferrofluid, creatures).
+
+Result documents:
+
+- [`benchmarks/diffusion/out/report/REPORT.md`](benchmarks/diffusion/out/report/REPORT.md), diffusion sweep and c2 per family
+- [`benchmarks/regressor/RESULTS.md`](benchmarks/regressor/RESULTS.md) and [`NIGHT_LOG.md`](benchmarks/regressor/NIGHT_LOG.md), regressor and guidance
+- [`benchmarks/regressor/PHASE_B.md`](benchmarks/regressor/PHASE_B.md), ControlNet fine-tune design, result and diagnosis
+- [`benchmarks/regressor/APPLICATIONS.md`](benchmarks/regressor/APPLICATIONS.md), capability matrix with research and art uses
+- [`benchmarks/regressor/FEASIBILITY.md`](benchmarks/regressor/FEASIBILITY.md), what each substrate reaches
+- [`benchmarks/percept_embedding/README.md`](benchmarks/percept_embedding/README.md), percept embedding at fixed (c1, c2)
+
+The labelled corpus, trained weights (`latent_model.pt`, the ControlNet
+checkpoint) and generated images are gitignored and stay on the GPU
+workstation.
 
 ---
 
